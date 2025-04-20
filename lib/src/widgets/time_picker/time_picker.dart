@@ -4,7 +4,6 @@ import '../../models/time_model.dart' as model;
 import 'time_picker_dial.dart';
 import 'time_picker_keyboard.dart';
 import 'time_picker_switch.dart';
-import 'dart:math' as math;
 
 /// 时间选择器组件
 class TimePicker extends StatefulWidget {

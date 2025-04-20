@@ -11,12 +11,12 @@ class TimeUtils {
   }) {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
-    
+
     if (showSeconds && second != null) {
       final secondStr = second.toString().padLeft(2, '0');
       return '$hour$separator$minute$separator$secondStr';
     }
-    
+
     return '$hour$separator$minute';
   }
 
@@ -43,10 +43,10 @@ class TimeUtils {
     final hours = (seconds ~/ 3600).toString().padLeft(2, '0');
     final minutes = ((seconds % 3600) ~/ 60).toString().padLeft(2, '0');
     final secs = (seconds % 60).toString().padLeft(2, '0');
-    
+
     return '$hours:$minutes:$secs';
   }
-  
+
   /// 将字符串解析为TimeOfDay
   static TimeOfDay? parseTimeOfDay(String timeString) {
     try {
@@ -54,7 +54,7 @@ class TimeUtils {
       if (parts.length >= 2) {
         final hour = int.parse(parts[0]);
         final minute = int.parse(parts[1]);
-        
+
         if (hour >= 0 && hour < 24 && minute >= 0 && minute < 60) {
           return TimeOfDay(hour: hour, minute: minute);
         }
@@ -62,10 +62,10 @@ class TimeUtils {
     } catch (e) {
       // 解析失败
     }
-    
+
     return null;
   }
-  
+
   /// 从TimeOfDay和秒数创建DateTime
   static DateTime createDateTime(TimeOfDay time, [int second = 0]) {
     final now = DateTime.now();
@@ -78,4 +78,4 @@ class TimeUtils {
       second,
     );
   }
-} 
+}

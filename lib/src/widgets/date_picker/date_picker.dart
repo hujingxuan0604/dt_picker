@@ -1,205 +1,344 @@
 import 'package:flutter/material.dart';
 import '../../controllers/date_picker_controller.dart';
-import '../../models/date_model.dart';
 import 'date_picker_calendar.dart';
-import 'date_picker_header.dart';
+import '../../utils/date_utils.dart';
 
 /// 日期选择器组件
 class DatePicker extends StatefulWidget {
+  /// 初始选中的日期
   final DateTime? initialDate;
-  final Function(DateTime) onDateChanged;
+
+  /// 最早可选择的日期
   final DateTime? firstDate;
+
+  /// 最晚可选择的日期
   final DateTime? lastDate;
-  final bool showHeader;
-  /// 显示模式配置，控制年月日选择的显示方式
+
+  /// 日期格式（默认：yyyy-MM-dd）
+  final String? dateFormat;
+
+  /// 日期选择器显示模式
   final DatePickerDisplayMode displayMode;
-  
+
+  /// 日期变更回调
+  final ValueChanged<DateTime>? onDateChanged;
+
+  /// 是否显示快捷日期按钮
+  final bool showQuickButtons;
+
+  /// 时间选择器组件（可选）
+  final Widget? timePickerWidget;
+
+  /// 构造函数
   const DatePicker({
-    super.key,
+    Key? key,
     this.initialDate,
-    required this.onDateChanged,
     this.firstDate,
     this.lastDate,
-    this.showHeader = true,
+    this.dateFormat,
     this.displayMode = DatePickerDisplayMode.full,
-  });
+    this.onDateChanged,
+    this.showQuickButtons = false,
+    this.timePickerWidget,
+  }) : super(key: key);
 
   @override
   State<DatePicker> createState() => _DatePickerState();
 }
 
 class _DatePickerState extends State<DatePicker> {
-  late final DatePickerController _controller;
+  /// 日期选择器控制器
+  late DatePickerController _controller;
 
   @override
   void initState() {
     super.initState();
+
+    // 初始化控制器
     _controller = DatePickerController(
       initialDate: widget.initialDate,
       displayMode: widget.displayMode,
     );
-    _controller.addListener(_onDateChanged);
+
+    print(
+        'DatePicker初始化: displayMode=${widget.displayMode}, viewMode=${_controller.viewMode}');
+
+    // 添加监听
+    _controller.addListener(_onControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(DatePicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 如果显示模式变更，需要更新控制器
+    if (oldWidget.displayMode != widget.displayMode) {
+      // 创建新控制器
+      final newController = DatePickerController(
+        initialDate: _controller.selectedDate,
+        displayMode: widget.displayMode,
+      );
+
+      // 保存当前视图数据
+      final currentYear = _controller.currentYear;
+      final currentMonth = _controller.currentMonth;
+
+      // 清理旧控制器
+      _controller.removeListener(_onControllerChanged);
+      _controller.dispose();
+
+      // 设置新控制器
+      _controller = newController;
+      _controller.updateMonth(currentYear, currentMonth);
+      _controller.addListener(_onControllerChanged);
+    }
   }
 
   @override
   void dispose() {
-    _controller.removeListener(_onDateChanged);
+    // 移除监听并释放控制器
+    _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
   }
 
-  void _onDateChanged() {
-    widget.onDateChanged(_controller.selectedDate);
-    setState(() {}); // 确保视图模式变化时重建UI
+  /// 控制器变更回调
+  void _onControllerChanged() {
+    if (widget.onDateChanged != null) {
+      widget.onDateChanged!(_controller.selectedDate);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 显示当前年月和导航按钮
+            _buildHeader(context),
+            const SizedBox(height: 12),
+
+            // 日历组件 - 直接使用，让它自己处理其内部的AnimatedBuilder
+            DatePickerCalendar(
+              controller: _controller,
+              firstDate: widget.firstDate,
+              lastDate: widget.lastDate,
+              onDateChanged: (date) {
+                if (widget.onDateChanged != null) {
+                  widget.onDateChanged!(date);
+                }
+              },
+            ),
+
+            // 只有在日视图模式下才显示快捷按钮和时间选择器
+            if (widget.showQuickButtons &&
+                _controller.viewMode == DatePickerViewMode.day) ...[
+              const SizedBox(height: 12),
+              _buildQuickButtons(context),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构建日期选择器头部
+  Widget _buildHeader(BuildContext context) {
+    // 根据当前视图模式显示不同的标题
+    String title = '';
+    VoidCallback? onTitleTap;
+
+    print(
+        '构建header，当前视图模式: ${_controller.viewMode}, displayMode: ${widget.displayMode}');
+
+    switch (_controller.viewMode) {
+      case DatePickerViewMode.day:
+        // 显示年月
+        title = '${_controller.currentYear}年${_controller.currentMonth}月';
+        if (_controller.showMonth) {
+          onTitleTap = () {
+            print('点击标题，从日期视图切换到月份视图');
+            _controller.switchToMonthMode();
+            print('切换后视图模式: ${_controller.viewMode}');
+          };
+        }
+        break;
+      case DatePickerViewMode.month:
+        // 显示年
+        title = '${_controller.currentYear}年';
+        if (_controller.showYear) {
+          onTitleTap = () {
+            print('点击标题，从月份视图切换到年份视图');
+            _controller.switchToYearMode();
+            print('切换后视图模式: ${_controller.viewMode}');
+          };
+        }
+        break;
+      case DatePickerViewMode.year:
+        // 显示年份范围
+        final startYear = _controller.currentYear - 5;
+        final endYear = _controller.currentYear + 6;
+        title = '$startYear - $endYear';
+        break;
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        if (widget.showHeader) ...[
-          DatePickerHeader(controller: _controller),
-          const SizedBox(height: 16),
-        ],
-        DatePickerCalendar(controller: _controller),
-        
-        // 添加返回按钮，当处于月份或年份视图且可以回到日期视图时显示
-        if (_controller.viewMode != DatePickerViewMode.day && _controller.showDay) ...[
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                _controller.switchToDayMode();
-              },
-              child: const Text('返回日期选择'),
+        // 上一个按钮
+        IconButton(
+          icon: const Icon(Icons.chevron_left),
+          onPressed: () {
+            switch (_controller.viewMode) {
+              case DatePickerViewMode.day:
+                _controller.previousMonth();
+                break;
+              case DatePickerViewMode.month:
+                _controller.previousYear();
+                break;
+              case DatePickerViewMode.year:
+                _controller.updateMonth(
+                    _controller.currentYear - 12, _controller.currentMonth);
+                break;
+            }
+          },
+        ),
+
+        // 标题
+        GestureDetector(
+          onTap: onTitleTap,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: onTitleTap != null
+                  ? const Color(0xFFEEEEEE)
+                  : Colors.transparent,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                if (onTitleTap != null) ...[
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.arrow_drop_down,
+                    size: 18,
+                    color: Colors.blue,
+                  ),
+                ],
+              ],
             ),
           ),
-        ],
-        
-        // 添加返回按钮，当处于年份视图且可以回到月份视图但不能回到日期视图时显示
-        if (_controller.viewMode == DatePickerViewMode.year && 
-            _controller.showMonth && 
-            !_controller.showDay) ...[
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerRight,
-            child: TextButton(
-              onPressed: () {
-                _controller.switchToMonthMode();
-              },
-              child: const Text('返回月份选择'),
-            ),
+        ),
+
+        // 下一个按钮
+        IconButton(
+          icon: const Icon(Icons.chevron_right),
+          onPressed: () {
+            switch (_controller.viewMode) {
+              case DatePickerViewMode.day:
+                _controller.nextMonth();
+                break;
+              case DatePickerViewMode.month:
+                _controller.nextYear();
+                break;
+              case DatePickerViewMode.year:
+                _controller.updateMonth(
+                    _controller.currentYear + 12, _controller.currentMonth);
+                break;
+            }
+          },
+        ),
+      ],
+    );
+  }
+
+  /// 构建快捷日期按钮
+  Widget _buildQuickButton(
+    BuildContext context,
+    String text,
+    DateTime date,
+    bool isActive,
+  ) {
+    return ElevatedButton(
+      onPressed: () {
+        _controller.updateSelectedDate(date);
+        _controller.updateMonth(date.year, date.month);
+        if (widget.onDateChanged != null) {
+          widget.onDateChanged!(date);
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        foregroundColor: isActive ? Colors.white : Colors.blue,
+        backgroundColor: isActive ? Colors.blue : Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        minimumSize: Size.zero,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+          side: BorderSide(
+            color: isActive ? Colors.transparent : Colors.grey,
           ),
-        ],
+        ),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 13)),
+    );
+  }
+
+  /// 构建快捷按钮组
+  Widget _buildQuickButtons(BuildContext context) {
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    final dayBeforeYesterday = now.subtract(const Duration(days: 2));
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // 快捷日期按钮
+        Row(
+          children: [
+            _buildQuickButton(
+              context,
+              "今天",
+              now,
+              DateUtil.isToday(_controller.selectedDate),
+            ),
+            const SizedBox(width: 8),
+            _buildQuickButton(
+              context,
+              "昨天",
+              yesterday,
+              DateUtil.isYesterday(_controller.selectedDate),
+            ),
+            const SizedBox(width: 8),
+            _buildQuickButton(
+              context,
+              "前天",
+              dayBeforeYesterday,
+              DateUtil.isDayBeforeYesterday(_controller.selectedDate),
+            ),
+          ],
+        ),
+
+        // 时间选择器组件（如果有）
+        if (widget.timePickerWidget != null) widget.timePickerWidget!,
       ],
     );
   }
 }
-
-/// 显示日期选择器对话框
-Future<DateTime?> showDatePicker2({
-  required BuildContext context,
-  DateTime? initialDate,
-  DateTime? firstDate,
-  DateTime? lastDate,
-  String title = '选择日期',
-  DatePickerDisplayMode displayMode = DatePickerDisplayMode.full,
-}) async {
-  DateTime? selectedDate = initialDate ?? DateTime.now();
-
-  final result = await showDialog<DateTime>(
-    context: context,
-    builder: (BuildContext context) {
-      final theme = Theme.of(context);
-      return Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        elevation: 8,
-        backgroundColor: theme.colorScheme.surface,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer.withOpacity(0.7),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.calendar_month_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.5,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              DatePicker(
-                initialDate: initialDate,
-                firstDate: firstDate,
-                lastDate: lastDate,
-                displayMode: displayMode,
-                onDateChanged: (date) {
-                  selectedDate = date;
-                },
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: Text(
-                      '取消',
-                      style: TextStyle(color: theme.colorScheme.error),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: () {
-                      Navigator.pop(context, selectedDate);
-                    },
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: const Text('确定'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    },
-  );
-
-  return result;
-} 

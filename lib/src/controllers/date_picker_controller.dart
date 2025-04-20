@@ -1,259 +1,224 @@
 import 'package:flutter/material.dart';
 
-/// 日期选择器视图模式
-enum DatePickerViewMode {
-  /// 日期选择模式
-  day,
-  /// 月份选择模式
-  month,
-  /// 年份选择模式
-  year,
+/// 日期选择器显示模式，控制哪些日期组件可见
+class DatePickerDisplayMode {
+  final bool showDay;
+  final bool showMonth;
+  final bool showYear;
+  /// 是否显示时间
+  final bool showTime;
+
+  const DatePickerDisplayMode({
+    required this.showDay,
+    required this.showMonth,
+    required this.showYear,
+    this.showTime = false,
+  });
+
+  /// 完整模式：显示年、月、日
+  static const DatePickerDisplayMode full = DatePickerDisplayMode(
+    showDay: true,
+    showMonth: true,
+    showYear: true,
+  );
+
+  /// 年月模式：只显示年和月
+  static const DatePickerDisplayMode yearMonth = DatePickerDisplayMode(
+    showDay: false,
+    showMonth: true,
+    showYear: true,
+  );
+
+  /// 月日模式：只显示月和日
+  static const DatePickerDisplayMode monthDay = DatePickerDisplayMode(
+    showDay: true,
+    showMonth: true,
+    showYear: false,
+  );
+
+  /// 年模式：只显示年
+  static const DatePickerDisplayMode year = DatePickerDisplayMode(
+    showDay: false,
+    showMonth: false,
+    showYear: true,
+  );
+
+  /// 月模式：只显示月
+  static const DatePickerDisplayMode month = DatePickerDisplayMode(
+    showDay: false,
+    showMonth: true,
+    showYear: false,
+  );
+
+  /// 日模式：只显示日
+  static const DatePickerDisplayMode day = DatePickerDisplayMode(
+    showDay: true,
+    showMonth: false,
+    showYear: false,
+  );
+  
+  /// 日期时间模式：显示年月日和时间
+  static const DatePickerDisplayMode dateTime = DatePickerDisplayMode(
+    showDay: true,
+    showMonth: true,
+    showYear: true,
+    showTime: true,
+  );
+  
+  /// 年月时间模式：显示年月和时间
+  static const DatePickerDisplayMode yearMonthTime = DatePickerDisplayMode(
+    showDay: false,
+    showMonth: true,
+    showYear: true,
+    showTime: true,
+  );
 }
 
-/// 日期选择器显示模式
-enum DatePickerDisplayMode {
-  /// 完整显示：年-月-日（含时间）
-  full(showYear: true, showMonth: true, showDay: true, showTime: true, initialViewMode: DatePickerViewMode.day),
-  
-  /// 仅显示月-日（无时间）
-  monthDay(showYear: false, showMonth: true, showDay: true, showTime: false, initialViewMode: DatePickerViewMode.day),
-  
-  /// 仅显示年-月（无时间）
-  yearMonth(showYear: true, showMonth: true, showDay: false, showTime: false, initialViewMode: DatePickerViewMode.month),
-  
-  /// 仅显示月份（无时间）
-  monthOnly(showYear: false, showMonth: true, showDay: false, showTime: false, initialViewMode: DatePickerViewMode.month),
-  
-  /// 仅显示年份（无时间）
-  yearOnly(showYear: true, showMonth: false, showDay: false, showTime: false, initialViewMode: DatePickerViewMode.year),
-  
-  /// 完整显示：年-月-日（无时间）
-  dateOnly(showYear: true, showMonth: true, showDay: true, showTime: false, initialViewMode: DatePickerViewMode.day);
-  
-  final bool showYear;
-  final bool showMonth;
-  final bool showDay;
-  final bool showTime; // 是否显示时间
-  final DatePickerViewMode initialViewMode;
-  
-  const DatePickerDisplayMode({
-    required this.showYear,
-    required this.showMonth,
-    required this.showDay,
-    required this.showTime,
-    required this.initialViewMode,
-  });
+/// 日期选择器视图模式
+enum DatePickerViewMode {
+  /// 日期视图
+  day,
+  /// 月份视图
+  month,
+  /// 年份视图
+  year,
 }
 
 /// 日期选择器控制器
 class DatePickerController extends ChangeNotifier {
+  /// 当前选中的日期
   DateTime _selectedDate;
-  DateTime _currentMonth;
+  
+  /// 当前显示的年份
+  int _currentYear;
+  
+  /// 当前显示的月份
+  int _currentMonth;
   
   /// 当前视图模式
   DatePickerViewMode _viewMode;
   
-  /// 显示模式配置
+  /// 显示配置
   final DatePickerDisplayMode displayMode;
+
+  /// 是否显示日期
+  bool get showDay => displayMode.showDay;
   
+  /// 是否显示月份
+  bool get showMonth => displayMode.showMonth;
+  
+  /// 是否显示年份
+  bool get showYear => displayMode.showYear;
+
+  /// 获取当前选中的日期
+  DateTime get selectedDate => _selectedDate;
+  
+  /// 获取当前显示的年份
+  int get currentYear => _currentYear;
+  
+  /// 获取当前显示的月份
+  int get currentMonth => _currentMonth;
+  
+  /// 获取当前视图模式
+  DatePickerViewMode get viewMode => _viewMode;
+
+  /// 构造函数
   DatePickerController({
     DateTime? initialDate,
     this.displayMode = DatePickerDisplayMode.full,
-  }) : _selectedDate = initialDate ?? DateTime.now(),
-       _currentMonth = DateTime(
-         initialDate?.year ?? DateTime.now().year,
-         initialDate?.month ?? DateTime.now().month,
-         1
-       ),
-       _viewMode = displayMode.initialViewMode;
-  
-  /// 当前选择的日期
-  DateTime get selectedDate => _selectedDate;
-  
-  /// 当前显示的月份
-  DateTime get currentMonth => _currentMonth;
-  
-  /// 当前视图模式
-  DatePickerViewMode get viewMode => _viewMode;
-  
-  /// 是否显示日期选择
-  bool get showDay => displayMode.showDay;
-  
-  /// 是否显示月份选择
-  bool get showMonth => displayMode.showMonth;
-  
-  /// 是否显示年份选择
-  bool get showYear => displayMode.showYear;
-  
-  /// 切换到日期视图模式
-  void switchToDayMode() {
-    if (displayMode.showDay) {
-      _viewMode = DatePickerViewMode.day;
-      notifyListeners();
+  }) : 
+    _selectedDate = initialDate ?? DateTime.now(),
+    _currentYear = (initialDate ?? DateTime.now()).year,
+    _currentMonth = (initialDate ?? DateTime.now()).month,
+    _viewMode = _getInitialViewMode(displayMode);
+    
+  /// 根据显示模式获取初始视图模式
+  static DatePickerViewMode _getInitialViewMode(DatePickerDisplayMode displayMode) {
+    // 如果不显示日视图，但显示月视图，则初始显示月视图
+    if (!displayMode.showDay && displayMode.showMonth) {
+      return DatePickerViewMode.month;
+    }
+    // 如果不显示日视图和月视图，但显示年视图，则初始显示年视图
+    else if (!displayMode.showDay && !displayMode.showMonth && displayMode.showYear) {
+      return DatePickerViewMode.year;
+    }
+    // 默认显示日视图
+    else {
+      return DatePickerViewMode.day;
     }
   }
-  
-  /// 切换到月份视图模式
-  void switchToMonthMode() {
-    if (displayMode.showMonth) {
-      _viewMode = DatePickerViewMode.month;
-      notifyListeners();
-    }
-  }
-  
-  /// 切换到年份视图模式
-  void switchToYearMode() {
-    if (displayMode.showYear) {
-      _viewMode = DatePickerViewMode.year;
-      notifyListeners();
-    }
-  }
-  
-  /// 更新选择的日期
+
+  /// 更新选中的日期
   void updateSelectedDate(DateTime date) {
     _selectedDate = date;
     notifyListeners();
   }
-  
-  /// 更改月份（加减月）
-  void changeMonth(int delta) {
-    _currentMonth = DateTime(
-      _currentMonth.year,
-      _currentMonth.month + delta,
-      1,
-    );
-    notifyListeners();
-  }
-  
-  /// 更新当前显示的月份
+
+  /// 更新年月
   void updateMonth(int year, int month) {
-    _currentMonth = DateTime(year, month, 1);
-    
-    // 更新选中日期的月份
-    _selectedDate = DateTime(
-      year, 
-      month, 
-      _selectedDate.day > 28 
-        ? _getDaysInMonth(year, month) 
-        : _selectedDate.day
-    );
-    
-    // 根据显示模式决定下一步操作
-    if (displayMode.showDay) {
-      // 如果显示日期模式，则选择月份后自动返回日期视图
+    _currentYear = year;
+    _currentMonth = month;
+    notifyListeners();
+  }
+
+  /// 切换到日期视图模式
+  void switchToDayMode() {
+    if (showDay) {
       _viewMode = DatePickerViewMode.day;
+      print('DatePickerController: 切换到日期视图模式');
+      notifyListeners();
     }
-    
-    notifyListeners();
   }
-  
-  /// 获取指定年月的天数
-  int _getDaysInMonth(int year, int month) {
-    return DateTime(year, month + 1, 0).day;
-  }
-  
-  /// 更新当前显示的年份
-  void updateYear(int year) {
-    _currentMonth = DateTime(year, _currentMonth.month, 1);
-    
-    // 更新选中日期的年份
-    _selectedDate = DateTime(
-      year, 
-      _selectedDate.month, 
-      _selectedDate.day > 28 
-        ? _getDaysInMonth(year, _selectedDate.month) 
-        : _selectedDate.day
-    );
-    
-    // 根据显示模式决定下一步操作
-    if (displayMode.showMonth && !displayMode.showDay) {
-      // 如果只显示年月，则选择年份后自动切换到月份视图
+
+  /// 切换到月份视图模式
+  void switchToMonthMode() {
+    if (showMonth) {
       _viewMode = DatePickerViewMode.month;
-    } else if (!displayMode.showMonth && !displayMode.showDay) {
-      // 如果只显示年份，则不切换视图
-      // 视图保持在年份选择模式
+      print('DatePickerController: 切换到月份视图模式');
+      notifyListeners();
+    }
+  }
+
+  /// 切换到年份视图模式
+  void switchToYearMode() {
+    if (showYear) {
+      _viewMode = DatePickerViewMode.year;
+      print('DatePickerController: 切换到年份视图模式');
+      notifyListeners();
+    }
+  }
+
+  /// 下一个月
+  void nextMonth() {
+    if (_currentMonth == 12) {
+      _currentMonth = 1;
+      _currentYear++;
     } else {
-      // 默认情况，选择年份后切换到月份视图
-      _viewMode = DatePickerViewMode.month;
+      _currentMonth++;
     }
-    
     notifyListeners();
   }
-  
-  /// 获取月份中的所有日期
-  List<DateTime> getDaysInMonth(DateTime month) {
-    final lastDay = DateTime(month.year, month.month + 1, 0);
-    return List.generate(
-      lastDay.day,
-      (i) => DateTime(month.year, month.month, i + 1),
-    );
-  }
-  
-  /// 获取日历中显示的所有日期（包括上下月的部分日期）
-  List<DateTime> getCalendarDays() {
-    final daysInMonth = getDaysInMonth(_currentMonth);
-    final firstDay = daysInMonth.first;
-    final firstDayOffset = (firstDay.weekday - 1) % 7;
-    
-    // 上个月的日期
-    final previousMonthDays = firstDayOffset > 0
-        ? getDaysInMonth(
-            DateTime(_currentMonth.year, _currentMonth.month - 1, 1),
-          ).sublist(
-            getDaysInMonth(
-              DateTime(_currentMonth.year, _currentMonth.month - 1, 1),
-            ).length - firstDayOffset,
-          )
-        : <DateTime>[];
-    
-    // 下个月的日期
-    final totalDays = previousMonthDays.length + daysInMonth.length;
-    final nextMonthDays = (7 - (totalDays % 7)) % 7 == 0
-        ? <DateTime>[]
-        : List<DateTime>.generate(
-            (7 - (totalDays % 7)) % 7,
-            (i) => DateTime(_currentMonth.year, _currentMonth.month + 1, i + 1),
-          );
-    
-    // 确保总是返回6行日历（6周）
-    final List<DateTime> allDays = [
-      ...previousMonthDays,
-      ...daysInMonth,
-      ...nextMonthDays,
-    ];
-    final weeksCount = (allDays.length / 7).ceil();
-    
-    if (weeksCount < 6) {
-      // 如果不足6周，添加下个月的日期
-      final daysToAdd = (6 - weeksCount) * 7;
-      final lastDate = allDays.last;
-      final List<DateTime> additionalDays = List<DateTime>.generate(
-        daysToAdd,
-        (i) => DateTime(lastDate.year, lastDate.month, lastDate.day + i + 1),
-      );
-      allDays.addAll(additionalDays);
+
+  /// 上一个月
+  void previousMonth() {
+    if (_currentMonth == 1) {
+      _currentMonth = 12;
+      _currentYear--;
+    } else {
+      _currentMonth--;
     }
-    
-    return allDays;
+    notifyListeners();
   }
-  
-  /// 是否是当前月
-  bool isCurrentMonth(DateTime date) {
-    return date.year == _currentMonth.year && date.month == _currentMonth.month;
+
+  /// 下一年
+  void nextYear() {
+    _currentYear++;
+    notifyListeners();
   }
-  
-  /// 是否是今天
-  bool isToday(DateTime date) {
-    final today = DateTime.now();
-    return date.year == today.year && 
-           date.month == today.month && 
-           date.day == today.day;
-  }
-  
-  /// 是否是选中的日期
-  bool isSelectedDate(DateTime date) {
-    return date.year == _selectedDate.year && 
-           date.month == _selectedDate.month && 
-           date.day == _selectedDate.day;
+
+  /// 上一年
+  void previousYear() {
+    _currentYear--;
+    notifyListeners();
   }
 } 

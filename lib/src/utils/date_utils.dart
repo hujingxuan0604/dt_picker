@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
-
 /// 日期工具类
-class DateUtils {
+class DateUtil {
   /// 获取月份中的所有日期
   static List<DateTime> getDaysInMonth(DateTime month) {
     final lastDay = DateTime(month.year, month.month + 1, 0);
@@ -12,23 +10,26 @@ class DateUtils {
   }
 
   /// 获取日历中显示的所有日期（包括上下月的部分日期）
-  static List<DateTime> getCalendarDays(DateTime month, {bool sixWeeks = true}) {
-    final DateTime firstDayOfMonth = DateTime(month.year, month.month, 1);
+  static List<DateTime> getCalendarDays(
+    DateTime month, {
+    bool sixWeeks = true,
+  }) {
     final daysInMonth = getDaysInMonth(month);
     final firstDay = daysInMonth.first;
     final firstDayOffset = (firstDay.weekday - 1) % 7;
-    
+
     // 上个月的日期
     final previousMonthDays = firstDayOffset > 0
         ? getDaysInMonth(
             DateTime(month.year, month.month - 1, 1),
           ).sublist(
             getDaysInMonth(
-              DateTime(month.year, month.month - 1, 1),
-            ).length - firstDayOffset,
+                  DateTime(month.year, month.month - 1, 1),
+                ).length -
+                firstDayOffset,
           )
         : <DateTime>[];
-    
+
     // 下个月的日期
     final totalDays = previousMonthDays.length + daysInMonth.length;
     final nextMonthDays = (7 - (totalDays % 7)) % 7 == 0
@@ -37,14 +38,14 @@ class DateUtils {
             (7 - (totalDays % 7)) % 7,
             (i) => DateTime(month.year, month.month + 1, i + 1),
           );
-    
+
     // 合并日期
     final List<DateTime> allDays = [
       ...previousMonthDays,
       ...daysInMonth,
       ...nextMonthDays,
     ];
-    
+
     // 如果需要固定6周，则添加额外的日期
     if (sixWeeks) {
       final weeksCount = (allDays.length / 7).ceil();
@@ -58,7 +59,7 @@ class DateUtils {
         allDays.addAll(additionalDays);
       }
     }
-    
+
     return allDays;
   }
 
@@ -71,6 +72,18 @@ class DateUtils {
   static bool isToday(DateTime date) {
     final now = DateTime.now();
     return isSameDay(date, now);
+  }
+
+  /// 判断日期是否为昨天
+  static bool isYesterday(DateTime date) {
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    return isSameDay(date, yesterday);
+  }
+
+  /// 判断日期是否为前天
+  static bool isDayBeforeYesterday(DateTime date) {
+    final dayBeforeYesterday = DateTime.now().subtract(const Duration(days: 2));
+    return isSameDay(date, dayBeforeYesterday);
   }
 
   /// 判断是否是本月
@@ -87,19 +100,19 @@ class DateUtils {
     bool showDay = true,
   }) {
     final parts = <String>[];
-    
+
     if (showYear) {
       parts.add(date.year.toString());
     }
-    
+
     if (showMonth) {
       parts.add(date.month.toString().padLeft(2, '0'));
     }
-    
+
     if (showDay) {
       parts.add(date.day.toString().padLeft(2, '0'));
     }
-    
+
     return parts.join(separator);
   }
-} 
+}

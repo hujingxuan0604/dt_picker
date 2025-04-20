@@ -42,6 +42,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final size = MediaQuery.of(context).size;
     // 调整表盘大小，使用屏幕宽度的0.4倍，但不超过250
     final dialSize = math.min(size.width * 0.5, 250.0);
@@ -49,18 +50,16 @@ class _TimePickerDialState extends State<TimePickerDial> {
     final outerRadius = (dialSize / 2.0) * 0.85;
     final innerRadius = outerRadius * 0.6;
     
+    // 设置表盘颜色
+    final dialBackgroundColor = isDarkMode
+        ? theme.colorScheme.surfaceVariant.withOpacity(0.12)
+        : theme.colorScheme.surfaceVariant.withOpacity(0.2);
+    
     return Container(
       padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: theme.shadowColor.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+      decoration: const BoxDecoration(
+        color: Colors.transparent,
+        // 移除边框和背景色
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -130,11 +129,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
                       height: dialSize,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.2),
-                          width: 2,
-                        ),
+                        color: dialBackgroundColor,
                       ),
                     ),
                   ),
@@ -442,21 +437,21 @@ class _TimePickerDialState extends State<TimePickerDial> {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    final backgroundColor = isSelected 
+        ? isDarkMode
+            ? theme.colorScheme.primary.withOpacity(0.2)
+            : theme.colorScheme.primaryContainer
+        : Colors.transparent;
     
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: isSelected ? theme.colorScheme.primaryContainer : Colors.transparent,
+          color: backgroundColor,
           borderRadius: BorderRadius.circular(8),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.2),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ] : null,
         ),
         child: Text(
           value,

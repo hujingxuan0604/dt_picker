@@ -165,7 +165,6 @@ class DatePickerController extends ChangeNotifier {
   void switchToDayMode() {
     if (showDay) {
       _viewMode = DatePickerViewMode.day;
-      print('DatePickerController: 切换到日期视图模式');
       notifyListeners();
     }
   }
@@ -174,7 +173,6 @@ class DatePickerController extends ChangeNotifier {
   void switchToMonthMode() {
     if (showMonth) {
       _viewMode = DatePickerViewMode.month;
-      print('DatePickerController: 切换到月份视图模式');
       notifyListeners();
     }
   }
@@ -183,7 +181,6 @@ class DatePickerController extends ChangeNotifier {
   void switchToYearMode() {
     if (showYear) {
       _viewMode = DatePickerViewMode.year;
-      print('DatePickerController: 切换到年份视图模式');
       notifyListeners();
     }
   }

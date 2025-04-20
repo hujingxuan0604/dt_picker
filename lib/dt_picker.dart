@@ -18,3 +18,7 @@ export 'src/controllers/time_picker_controller.dart';
 // 导出工具类
 export 'src/utils/date_utils.dart';
 export 'src/utils/time_utils.dart';
+
+// 导出日期时间选择器组件
+export 'src/widgets/date_time_picker/date_time_picker.dart';
+export 'src/themes/app_theme.dart';

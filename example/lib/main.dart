@@ -14,8 +14,64 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'DateTimePicker Demo',
-      theme: ThemeData(useMaterial3: true),
+      theme: _getLightTheme(),
+      darkTheme: _getDarkTheme(),
+      themeMode: ThemeMode.system,
       home: const MyHomePage(),
+    );
+  }
+  
+  // 获取亮色主题
+  ThemeData _getLightTheme() {
+    const primaryColor = Color(0xFF2196F3);
+    const secondaryColor = Color(0xFF03A9F4);
+    
+    return ThemeData(
+      useMaterial3: true,
+      primaryColor: primaryColor,
+      colorScheme: ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        background: const Color(0xFFF8F9FA),
+        error: const Color(0xFFE53935),
+        surface: Colors.white,
+        onSurface: const Color(0xFF424242),
+        primaryContainer: primaryColor.withOpacity(0.12),
+        secondaryContainer: secondaryColor.withOpacity(0.12),
+        surfaceVariant: const Color(0xFFEEEEEE),
+        outline: const Color(0xFFBDBDBD),
+      ),
+      scaffoldBackgroundColor: const Color(0xFFF8F9FA),
+      cardColor: Colors.white,
+      dividerColor: const Color(0xFFE0E0E0),
+      shadowColor: Colors.black.withOpacity(0.1),
+    );
+  }
+
+  // 获取暗色主题
+  ThemeData _getDarkTheme() {
+    const primaryColor = Color(0xFF2196F3);
+    const secondaryColor = Color(0xFF03A9F4);
+    
+    return ThemeData.dark().copyWith(
+      useMaterial3: true,
+      primaryColor: primaryColor,
+      colorScheme: ColorScheme.dark(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        error: const Color(0xFFE53935),
+        surface: const Color(0xFF1E1E1E),
+        background: const Color(0xFF121212),
+        onSurface: const Color(0xFFE0E0E0),
+        primaryContainer: primaryColor.withOpacity(0.15),
+        secondaryContainer: secondaryColor.withOpacity(0.15),
+        surfaceVariant: const Color(0xFF2D2D2D),
+        outline: const Color(0xFF555555),
+      ),
+      scaffoldBackgroundColor: const Color(0xFF121212),
+      cardColor: const Color(0xFF1E1E1E),
+      dividerColor: const Color(0xFF2D2D2D),
+      shadowColor: Colors.black.withOpacity(0.2),
     );
   }
 }
@@ -41,9 +97,13 @@ class _MyHomePageState extends State<MyHomePage> {
   // 显示年月选择对话框
   Future<void> _showYearMonthPicker() async {
     DateTime? selectedDate = _yearMonthResult?.date ?? DateTime.now();
-    final result = await showDialog<DateTime>(
+    final result = await showModalBottomSheet<DateTime>(
       context: context,
-      builder: (context) => _buildDatePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetDatePicker(
         title: '选择年月',
         child: DatePicker(
           initialDate: selectedDate,
@@ -71,9 +131,13 @@ class _MyHomePageState extends State<MyHomePage> {
   // 显示日期选择对话框
   Future<void> _showDatePicker() async {
     DateTime? selectedDate = _dateOnlyResult ?? DateTime.now();
-    final result = await showDialog<DateTime>(
+    final result = await showModalBottomSheet<DateTime>(
       context: context,
-      builder: (context) => _buildDatePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期',
         child: DatePicker(
           initialDate: selectedDate,
@@ -101,9 +165,13 @@ class _MyHomePageState extends State<MyHomePage> {
     DateTimeResult? selectedResult;
     final initialDate = _dateTimePickerResult?.date ?? DateTime.now();
 
-    final result = await showDialog<DateTimeResult>(
+    final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
-      builder: (context) => _buildDatePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期和时间',
         child: DateTimePicker(
           initialDate: initialDate,
@@ -136,9 +204,13 @@ class _MyHomePageState extends State<MyHomePage> {
     DateTimeResult? selectedResult;
     final initialDate = _dateTimeWithQuickButtons?.date ?? DateTime.now();
 
-    final result = await showDialog<DateTimeResult>(
+    final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
-      builder: (context) => _buildDatePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期和时间',
         child: DateTimePicker(
           initialDate: initialDate,
@@ -173,9 +245,13 @@ class _MyHomePageState extends State<MyHomePage> {
     final initialDate =
         _dateTimeNoTimeResult?.date ?? _dateOnlyResult ?? DateTime.now();
 
-    final result = await showDialog<DateTimeResult>(
+    final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
-      builder: (context) => _buildDatePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期',
         child: DatePicker(
           initialDate: initialDate,
@@ -206,9 +282,13 @@ class _MyHomePageState extends State<MyHomePage> {
     TimeOfDay selectedTime = _timeWithSecondsResult?.time ?? TimeOfDay.now();
     int selectedSecond = _timeWithSecondsResult?.second ?? 0;
 
-    final result = await showDialog<TimeWithSeconds>(
+    final result = await showModalBottomSheet<TimeWithSeconds>(
       context: context,
-      builder: (context) => _buildTimePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetTimePicker(
         title: '选择时间',
         child: TimePicker(
           initialTime: selectedTime,
@@ -238,9 +318,13 @@ class _MyHomePageState extends State<MyHomePage> {
     TimeOfDay selectedTime = _timeNoSecondsResult?.time ?? TimeOfDay.now();
     int selectedSecond = _timeNoSecondsResult?.second ?? 0;
 
-    final result = await showDialog<TimeWithSeconds>(
+    final result = await showModalBottomSheet<TimeWithSeconds>(
       context: context,
-      builder: (context) => _buildTimePickerDialog(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => _buildBottomSheetTimePicker(
         title: '选择时间',
         child: TimePicker(
           initialTime: selectedTime,
@@ -265,176 +349,250 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 构建日期选择对话框
-  Widget _buildDatePickerDialog({
+  // 构建底部弹出的日期选择器
+  Widget _buildBottomSheetDatePicker({
     required String title,
     required Widget child,
     required VoidCallback onConfirm,
   }) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),
-      ),
-      elevation: 8,
-      backgroundColor: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE3F2FD),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Icon(
-                    Icons.calendar_month_rounded,
-                    color: Colors.blue,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 0.5,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            child,
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                  ),
-                  child: const Text(
-                    '取消',
-                    style: TextStyle(color: Colors.red),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: onConfirm,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                  ),
-                  child: const Text('确定'),
-                ),
-              ],
-            ),
-          ],
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final mediaQuery = MediaQuery.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20.0),
+          topRight: Radius.circular(20.0),
         ),
       ),
-    );
-  }
-
-  // 构建时间选择对话框
-  Widget _buildTimePickerDialog({
-    required String title,
-    required Widget child,
-    required VoidCallback onConfirm,
-  }) {
-    return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20.0),
+      padding: EdgeInsets.only(
+        left: 16.0, 
+        right: 16.0, 
+        top: 8.0,
+        bottom: mediaQuery.viewInsets.bottom + 16.0,
       ),
-      elevation: 8,
-      backgroundColor: Colors.white,
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 480, maxWidth: 350),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 顶部拖动条
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // 标题栏
+          Row(
             children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule,
-                    color: Colors.blue,
-                    size: 22,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: child,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isDarkMode 
+                      ? theme.colorScheme.primary.withOpacity(0.2)
+                      : const Color(0xFFE3F2FD),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  Icons.calendar_month_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 24,
                 ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: const Text(
-                      '取消',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  FilledButton(
-                    onPressed: onConfirm,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                    ),
-                    child: const Text('确定'),
-                  ),
-                ],
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                  color: theme.colorScheme.onSurface,
+                ),
               ),
             ],
           ),
+          // const SizedBox(height: 16),
+          // 日期选择器内容
+          child,
+          // const SizedBox(height: 24),
+          // 按钮行 - 居中显示
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 10,
+                  ),
+                  side: BorderSide(color: theme.colorScheme.outline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  '取消',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              FilledButton(
+                onPressed: onConfirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  '确定',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // 构建底部弹出的时间选择器
+  Widget _buildBottomSheetTimePicker({
+    required String title,
+    required Widget child,
+    required VoidCallback onConfirm,
+  }) {
+    final theme = Theme.of(context);
+    final mediaQuery = MediaQuery.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(20.0),
+          topRight: Radius.circular(20.0),
         ),
+      ),
+      padding: EdgeInsets.only(
+        left: 16.0, 
+        right: 16.0, 
+        top: 16.0,
+        bottom: mediaQuery.viewInsets.bottom + 16.0,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 顶部拖动条
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onSurface.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // 标题栏
+          Row(
+            children: [
+              Icon(
+                Icons.schedule,
+                color: theme.colorScheme.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // 时间选择器内容
+          Flexible(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(context).size.height * 0.4,
+              ),
+              child: SingleChildScrollView(
+                child: child,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          // 按钮行 - 居中显示
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 10,
+                  ),
+                  side: BorderSide(color: theme.colorScheme.outline),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: Text(
+                  '取消',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              FilledButton(
+                onPressed: onConfirm,
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 32,
+                    vertical: 10,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                ),
+                child: const Text(
+                  '确定',
+                  style: TextStyle(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('日期时间选择器示例'),
-        backgroundColor: const Color(0xFFE3F2FD),
+        backgroundColor: theme.colorScheme.primaryContainer,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -461,16 +619,8 @@ class _MyHomePageState extends State<MyHomePage> {
             // 添加直接使用DatePicker的测试组件
             const SizedBox(height: 10),
             _buildSectionTitle('1.1 直接显示年月选择器'),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.purple.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const DatePicker(
-                displayMode: DatePickerDisplayMode.yearMonth,
-              ),
+            const DatePicker(
+              displayMode: DatePickerDisplayMode.yearMonth,
             ),
 
             const SizedBox(height: 20),
@@ -513,13 +663,13 @@ class _MyHomePageState extends State<MyHomePage> {
             // 添加直接使用DateTimePicker的测试组件
             const SizedBox(height: 10),
             DateTimePicker(
-                initialDate: DateTime.now(),
-                showQuickButtons: true,
-                displayMode: DatePickerDisplayMode.dateTime,
-                onDateTimeChanged: (result) {
-                  // 仅用于测试
-                },
-              ),
+              initialDate: DateTime.now(),
+              showQuickButtons: true,
+              displayMode: DatePickerDisplayMode.dateTime,
+              onDateTimeChanged: (result) {
+                // 仅用于测试
+              },
+            ),
 
             const SizedBox(height: 20),
 
@@ -604,14 +754,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // 构建区域标题
   Widget _buildSectionTitle(String title) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         title,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.bold,
-          color: Colors.black87,
+          color: theme.colorScheme.onSurface,
         ),
       ),
     );
@@ -619,9 +771,17 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // 构建结果显示卡片
   Widget _buildResultCard(String text, Color backgroundColor) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    // 在暗色模式下调整背景色不透明度
+    final bgColor = isDarkMode 
+        ? backgroundColor.withOpacity(0.2) 
+        : backgroundColor;
+    
     return Card(
       elevation: 0,
-      color: backgroundColor,
+      color: bgColor,
       margin: const EdgeInsets.only(top: 8.0, bottom: 8.0),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(10),
@@ -630,10 +790,10 @@ class _MyHomePageState extends State<MyHomePage> {
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.black87,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ),

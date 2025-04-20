@@ -53,6 +53,14 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
   @override
   Widget build(BuildContext context) {
     // 直接根据控制器状态构建不同的日历组件
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: _buildCalendarContent(context),
+    );
+  }
+
+  /// 根据不同视图模式构建日历内容
+  Widget _buildCalendarContent(BuildContext context) {
     switch (widget.controller.viewMode) {
       case DatePickerViewMode.day:
         return _buildDayView(context);
@@ -65,15 +73,34 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
   /// 构建日期视图
   Widget _buildDayView(BuildContext context) {
+    final theme = Theme.of(context);
+    //final isDarkMode = theme.brightness == Brightness.dark;
     final currentYear = widget.controller.currentYear;
     final currentMonth = widget.controller.currentMonth;
+
+    // 为日期视图添加key，以便在月份切换时启用动画
+    final viewKey = ValueKey('day-${currentYear}-${currentMonth}');
+
+    // 根据主题确定颜色
+    // final primaryColor = theme.colorScheme.primary;
+    // final onPrimaryColor = theme.colorScheme.onPrimary;
+    // final todayColor =
+    //     isDarkMode ? primaryColor.withOpacity(0.3) : const Color(0xFFE3F2FD);
+    // final textColor = isDarkMode ? theme.colorScheme.onSurface : Colors.black87;
+    // final disabledTextColor = theme.colorScheme.onSurface.withOpacity(0.4);
+    // final otherMonthTextColor = theme.colorScheme.onSurface.withOpacity(0.3);
 
     // 获取当前月的第一天和天数
     final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
     final daysInMonth = DateTime(currentYear, currentMonth + 1, 0).day;
 
-    // 计算本月第一天是星期几（0是星期一，6是星期日）
-    int firstWeekday = firstDayOfMonth.weekday % 7;
+    // 计算本月第一天是星期几（以周一为1，周日为7）
+    // 我们不需要取模，直接使用weekday，它已经是1-7（周一到周日）
+    int firstWeekday = firstDayOfMonth.weekday;
+
+    // 因为我们的日历是从周一开始的，所以要调整值
+    // 周一应该是0，周日应该是6
+    int firstWeekdayAdjusted = firstWeekday - 1;
 
     // 准备日历网格数据
     final calendarDays = <DateTime>[];
@@ -81,9 +108,9 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     // 添加上个月的日期
     final lastMonth = DateTime(currentYear, currentMonth, 0);
     final daysInLastMonth = lastMonth.day;
-    for (int i = 0; i < firstWeekday; i++) {
+    for (int i = 0; i < firstWeekdayAdjusted; i++) {
       calendarDays.add(DateTime(lastMonth.year, lastMonth.month,
-          daysInLastMonth - firstWeekday + i + 1));
+          daysInLastMonth - firstWeekdayAdjusted + i + 1));
     }
 
     // 添加本月的日期
@@ -93,12 +120,12 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
     // 计算需要多少行来显示本月日期
     // 第一天的星期几 + 当月的总天数
-    final int totalPositions = firstWeekday + daysInMonth;
-    // 计算总共需要多少行，取上限为5
-    final int rows = totalPositions <= 35 ? 5 : 6;
+    final int totalPositions = firstWeekdayAdjusted + daysInMonth;
+    // 强制使用6行来显示日历，保持布局一致性
+    const int rows = 6;
 
-    // 如果行数超过5，那么截断到35天（5行 * 7列 = 35个日期）
-    final int maxDays = rows * 7;
+    // 计算总共需要的日期数量：6行 * 7列 = 42个日期
+    const int maxDays = rows * 7;
 
     // 添加下个月的日期（补齐到指定行数）
     final int remainingDays = maxDays - calendarDays.length;
@@ -106,43 +133,21 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
       calendarDays.add(DateTime(currentYear, currentMonth + 1, i));
     }
 
-    // 确保不会超过35天
-    if (calendarDays.length > 35) {
-      calendarDays.length = 35;
-    }
+    // 日历现在总是显示42个日期（6行×7列）
 
     return Column(
+      key: viewKey,
       mainAxisSize: MainAxisSize.min,
       children: [
         // 星期标题行
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              for (String weekDay in ['一', '二', '三', '四', '五', '六', '日'])
-                SizedBox(
-                  width: 36,
-                  child: Center(
-                    child: Text(
-                      weekDay,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.black54,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
+        _buildCalendarHeader(theme),
         // 日期网格
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
-            childAspectRatio: 0.85,
+            childAspectRatio: 1.0,
             mainAxisSpacing: 2,
             crossAxisSpacing: 2,
           ),
@@ -150,53 +155,11 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
           itemBuilder: (context, index) {
             final date = calendarDays[index];
             final isCurrentMonth = date.month == currentMonth;
-            final isToday = _isToday(date);
-            final isSelected = _isSelectedDate(date);
-            final isDisabled = _isDateDisabled(date);
+            // final isToday = _isToday(date);
+            // final isSelected = _isSelectedDate(date);
+            // final isDisabled = _isDateDisabled(date);
 
-            return GestureDetector(
-              onTap: isDisabled ? null : () => _selectDate(date),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(4),
-                  color: isSelected
-                      ? Colors.blue
-                      : isToday
-                          ? const Color(0xFFE3F2FD)
-                          : Colors.transparent,
-                  border: Border.all(
-                    color: isSelected
-                        ? Colors.blue
-                        : isToday
-                            ? Colors.blue.withOpacity(0.3)
-                            : Colors.transparent,
-                    width: 1,
-                  ),
-                ),
-                margin: const EdgeInsets.all(2),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      date.day.toString(),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isSelected
-                            ? Colors.white
-                            : isCurrentMonth
-                                ? isDisabled
-                                    ? Colors.grey
-                                    : Colors.black87
-                                : Colors.grey.withOpacity(0.5),
-                        fontWeight:
-                            isToday || isSelected ? FontWeight.bold : null,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+            return _buildDayCell(context, date, isCurrentMonth, theme);
           },
         ),
       ],
@@ -205,7 +168,18 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
   /// 构建月份视图
   Widget _buildMonthView(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final currentYear = widget.controller.currentYear;
+
+    // 根据主题确定颜色
+    final primaryColor = theme.colorScheme.primary;
+    final selectedBgColor =
+        isDarkMode ? primaryColor.withOpacity(0.3) : const Color(0xFFE3F2FD);
+    final normalBgColor = theme.colorScheme.surface;
+    final textColor = theme.colorScheme.onSurface;
+    final disabledTextColor = theme.colorScheme.onSurface.withOpacity(0.4);
+    final selectedTextColor = theme.colorScheme.primary;
 
     // 月份名称列表
     final List<String> monthNames = [
@@ -243,11 +217,12 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
           onTap: isDisabled ? null : () => _selectMonth(month),
           child: Container(
             decoration: BoxDecoration(
-              color: isCurrentMonth ? const Color(0xFFE3F2FD) : Colors.white,
+              color: isCurrentMonth ? selectedBgColor : normalBgColor,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color:
-                    isCurrentMonth ? Colors.blue : Colors.grey.withOpacity(0.3),
+                color: isCurrentMonth
+                    ? primaryColor
+                    : theme.colorScheme.outline.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -257,10 +232,10 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
               style: TextStyle(
                 fontSize: 14,
                 color: isDisabled
-                    ? Colors.grey
+                    ? disabledTextColor
                     : isCurrentMonth
-                        ? Colors.blue
-                        : Colors.black87,
+                        ? selectedTextColor
+                        : textColor,
                 fontWeight: isCurrentMonth ? FontWeight.bold : null,
               ),
             ),
@@ -272,7 +247,18 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
   /// 构建年份视图
   Widget _buildYearView(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final selectedYear = widget.controller.selectedDate.year;
+
+    // 根据主题确定颜色
+    final primaryColor = theme.colorScheme.primary;
+    final selectedBgColor =
+        isDarkMode ? primaryColor.withOpacity(0.3) : const Color(0xFFE3F2FD);
+    final normalBgColor = theme.colorScheme.surface;
+    final textColor = theme.colorScheme.onSurface;
+    final disabledTextColor = theme.colorScheme.onSurface.withOpacity(0.4);
+    final selectedTextColor = theme.colorScheme.primary;
 
     // 显示12年，当前年份居中
     final int startYear = widget.controller.currentYear - 5;
@@ -297,10 +283,12 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
           onTap: isDisabled ? null : () => _selectYear(year),
           child: Container(
             decoration: BoxDecoration(
-              color: isSelected ? const Color(0xFFE3F2FD) : Colors.white,
+              color: isSelected ? selectedBgColor : normalBgColor,
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
-                color: isSelected ? Colors.blue : Colors.grey.withOpacity(0.3),
+                color: isSelected
+                    ? primaryColor
+                    : theme.colorScheme.outline.withOpacity(0.3),
                 width: 1,
               ),
             ),
@@ -310,10 +298,10 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
               style: TextStyle(
                 fontSize: 14,
                 color: isDisabled
-                    ? Colors.grey
+                    ? disabledTextColor
                     : isSelected
-                        ? Colors.blue
-                        : Colors.black87,
+                        ? selectedTextColor
+                        : textColor,
                 fontWeight: isSelected ? FontWeight.bold : null,
               ),
             ),
@@ -325,11 +313,6 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
   /// 选择日期
   void _selectDate(DateTime date) {
-    // 更新控制器
-    if (date.month != widget.controller.currentMonth) {
-      widget.controller.updateMonth(date.year, date.month);
-    }
-
     // 更新选中的日期
     widget.controller.updateSelectedDate(date);
 
@@ -397,20 +380,20 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
   }
 
   /// 判断日期是否为今天
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
+  // bool _isToday(DateTime date) {
+  //   final now = DateTime.now();
+  //   return date.year == now.year &&
+  //       date.month == now.month &&
+  //       date.day == now.day;
+  // }
 
-  /// 判断日期是否为选中的日期
-  bool _isSelectedDate(DateTime date) {
-    final selected = widget.controller.selectedDate;
-    return date.year == selected.year &&
-        date.month == selected.month &&
-        date.day == selected.day;
-  }
+  // /// 判断日期是否为选中的日期
+  // bool _isSelectedDate(DateTime date) {
+  //   final selected = widget.controller.selectedDate;
+  //   return date.year == selected.year &&
+  //       date.month == selected.month &&
+  //       date.day == selected.day;
+  // }
 
   /// 判断日期是否在可选范围内
   bool _isDateDisabled(DateTime date) {
@@ -454,5 +437,167 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
       return true;
     }
     return false;
+  }
+
+  /// 构建日历头部
+  Widget _buildCalendarHeader(ThemeData theme) {
+    // 星期几名称，从周一到周日
+    const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceAround,
+      children: List.generate(7, (index) {
+        // 在我们的数组中，索引5是周六，索引6是周日
+        final isWeekend = index == 5 || index == 6;
+        return SizedBox(
+          width: 28,
+          height: 28,
+          child: Center(
+            child: Text(
+              weekdays[index],
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: isWeekend
+                    ? theme.colorScheme.primary.withOpacity(0.8)
+                    : theme.colorScheme.onSurface.withOpacity(0.7),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  /// 构建日期单元格
+  Widget _buildDayCell(
+    BuildContext context,
+    DateTime date,
+    bool isCurrentMonth,
+    ThemeData theme,
+  ) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final selectedDate = DateTime(
+      widget.controller.selectedDate.year,
+      widget.controller.selectedDate.month,
+      widget.controller.selectedDate.day,
+    );
+
+    // 判断日期是否为今天、选中日期
+    final isSelected = date.isAtSameMomentAs(selectedDate);
+    final isToday = date.isAtSameMomentAs(today);
+
+    // 周六是6，周日是7
+    final isWeekend = date.weekday == 6 || date.weekday == 7;
+
+    final isDarkMode = theme.brightness == Brightness.dark;
+
+    // 是否禁用（超出可选范围）
+    final isDisabled = _isDateDisabled(date);
+
+    // 文本颜色
+    Color textColor;
+    if (isDisabled) {
+      textColor = theme.colorScheme.onSurface.withOpacity(0.3);
+    } else if (isSelected) {
+      textColor = theme.colorScheme.onPrimary;
+    } else if (isToday) {
+      textColor = theme.colorScheme.primary;
+    } else if (!isCurrentMonth) {
+      // 上个月或下个月的日期使用更柔和的颜色
+      textColor = isDarkMode
+          ? theme.colorScheme.onSurface.withOpacity(0.3)
+          : theme.colorScheme.onSurface.withOpacity(0.35);
+    } else if (isWeekend) {
+      textColor = theme.colorScheme.primary.withOpacity(0.8);
+    } else {
+      textColor = theme.colorScheme.onSurface;
+    }
+
+    // 背景颜色
+    Color? backgroundColor;
+    if (isSelected) {
+      backgroundColor = theme.colorScheme.primary;
+    } else if (isToday) {
+      backgroundColor = isDarkMode
+          ? theme.colorScheme.primaryContainer
+          : theme.colorScheme.primaryContainer;
+    } else if (!isCurrentMonth) {
+      // 非当前月的日期背景色，使其更柔和更低调
+      backgroundColor = isDarkMode
+          ? theme.colorScheme.surfaceVariant.withOpacity(0.08)
+          : theme.colorScheme.surfaceVariant.withOpacity(0.1);
+    }
+
+    // 边框
+    Border? border;
+    if (isToday && !isSelected) {
+      border = Border.all(
+        color: theme.colorScheme.primary,
+        width: 1,
+      );
+    }
+
+    // 添加提示文本
+    String? tooltip;
+    if (!isCurrentMonth) {
+      final monthNames = [
+        '一月',
+        '二月',
+        '三月',
+        '四月',
+        '五月',
+        '六月',
+        '七月',
+        '八月',
+        '九月',
+        '十月',
+        '十一月',
+        '十二月'
+      ];
+      tooltip = '${date.year}年${monthNames[date.month - 1]} ${date.day}日';
+    }
+
+    return Tooltip(
+      message: tooltip ?? '',
+      showDuration: const Duration(milliseconds: 500),
+      waitDuration: const Duration(milliseconds: 500),
+      child: InkWell(
+        onTap: isDisabled
+            ? null
+            : () {
+                // 如果点击的是当前月的日期，直接选中
+                if (isCurrentMonth) {
+                  _selectDate(date);
+                } else {
+                  // 如果是上个月或下个月的日期，先跳转到对应月份，再选中
+                  widget.controller.updateMonth(date.year, date.month);
+                  _selectDate(date);
+                }
+              },
+        customBorder: const CircleBorder(),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            shape: BoxShape.circle,
+            border: border,
+          ),
+          child: Center(
+            child: Text(
+              date.day.toString(),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: textColor,
+                fontWeight:
+                    isSelected || isToday ? FontWeight.bold : FontWeight.normal,
+                // 非当月日期字体略小
+                fontSize: !isCurrentMonth ? 11 : null,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

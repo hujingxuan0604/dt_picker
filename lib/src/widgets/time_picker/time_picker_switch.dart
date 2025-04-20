@@ -13,16 +13,21 @@ class TimePickerSwitch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
     return IconButton(
       icon: Icon(
         controller.mode == TimePickerMode.keyboard
             ? Icons.watch_later_rounded
             : Icons.keyboard_rounded,
-        color: Colors.blue,
+        color: theme.colorScheme.primary,
         size: 20,
       ),
       style: IconButton.styleFrom(
-        backgroundColor: const Color(0xFFE3F2FD),
+        backgroundColor: isDarkMode 
+            ? theme.colorScheme.primary.withOpacity(0.2)
+            : const Color(0xFFE3F2FD),
         padding: const EdgeInsets.all(8),
       ),
       onPressed: controller.toggleMode,

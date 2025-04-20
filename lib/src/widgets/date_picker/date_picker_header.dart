@@ -12,17 +12,32 @@ class DatePickerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final currentYear = controller.currentYear;
     final currentMonth = controller.currentMonth;
+
+    // 根据当前主题确定颜色
+    final headerBgColor = isDarkMode 
+        ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+        : const Color(0xFFEEEEEE);
+    
+    final primaryColor = theme.colorScheme.primary;
+    final onSurfaceColor = theme.colorScheme.onSurface;
+    
+    // 选中状态的背景色
+    final selectedBgColor = isDarkMode
+        ? primaryColor.withOpacity(0.2)
+        : const Color(0xFFE3F2FD);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       constraints: const BoxConstraints(minHeight: 48),
       decoration: BoxDecoration(
-        color: const Color(0xFFEEEEEE),
+        color: headerBgColor,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.2),
+          color: theme.colorScheme.outline.withOpacity(0.2),
         ),
       ),
       child: Row(
@@ -31,7 +46,10 @@ class DatePickerHeader extends StatelessWidget {
           // 上个月按钮
           if (controller.showMonth || controller.showDay)
             IconButton(
-              icon: const Icon(Icons.arrow_back_ios_rounded, size: 16),
+              icon: Icon(Icons.arrow_back_ios_rounded, 
+                size: 16, 
+                color: theme.colorScheme.primary,
+              ),
               onPressed: () => controller.previousMonth(),
               style: IconButton.styleFrom(
                 shape: RoundedRectangleBorder(
@@ -67,10 +85,10 @@ class DatePickerHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: theme.colorScheme.outline.withOpacity(0.3),
                         ),
                         color: controller.viewMode == DatePickerViewMode.year
-                            ? const Color(0xFFE3F2FD)
+                            ? selectedBgColor
                             : null,
                       ),
                       child: Row(
@@ -86,8 +104,8 @@ class DatePickerHeader extends StatelessWidget {
                                       : FontWeight.normal,
                               color:
                                   controller.viewMode == DatePickerViewMode.year
-                                      ? Colors.blue
-                                      : Colors.black87,
+                                      ? primaryColor
+                                      : onSurfaceColor,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -96,8 +114,8 @@ class DatePickerHeader extends StatelessWidget {
                             size: 18,
                             color:
                                 controller.viewMode == DatePickerViewMode.year
-                                    ? Colors.blue
-                                    : Colors.black54,
+                                    ? primaryColor
+                                    : onSurfaceColor.withOpacity(0.6),
                           ),
                         ],
                       ),
@@ -127,10 +145,10 @@ class DatePickerHeader extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: Colors.grey.withOpacity(0.3),
+                          color: theme.colorScheme.outline.withOpacity(0.3),
                         ),
                         color: controller.viewMode == DatePickerViewMode.month
-                            ? const Color(0xFFE3F2FD)
+                            ? selectedBgColor
                             : null,
                       ),
                       child: Row(
@@ -146,8 +164,8 @@ class DatePickerHeader extends StatelessWidget {
                                   : FontWeight.normal,
                               color: controller.viewMode ==
                                       DatePickerViewMode.month
-                                  ? Colors.blue
-                                  : Colors.black87,
+                                  ? primaryColor
+                                  : onSurfaceColor,
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -156,8 +174,8 @@ class DatePickerHeader extends StatelessWidget {
                             size: 18,
                             color:
                                 controller.viewMode == DatePickerViewMode.month
-                                    ? Colors.blue
-                                    : Colors.black54,
+                                    ? primaryColor
+                                    : onSurfaceColor.withOpacity(0.6),
                           ),
                         ],
                       ),
@@ -170,7 +188,10 @@ class DatePickerHeader extends StatelessWidget {
           // 下个月按钮
           if (controller.showMonth || controller.showDay)
             IconButton(
-              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16),
+              icon: Icon(Icons.arrow_forward_ios_rounded, 
+                size: 16,
+                color: theme.colorScheme.primary,
+              ),
               onPressed: () => controller.nextMonth(),
               style: IconButton.styleFrom(
                 shape: RoundedRectangleBorder(
@@ -187,6 +208,8 @@ class DatePickerHeader extends StatelessWidget {
 
   // 显示年份选择器对话框
   void _showYearPickerDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    
     showDialog(
       context: context,
       builder: (context) {
@@ -194,6 +217,8 @@ class DatePickerHeader extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
           child: YearPickerDialog(
             initialYear: controller.currentYear,
             onYearSelected: (year) {
@@ -213,6 +238,8 @@ class DatePickerHeader extends StatelessWidget {
 
   // 显示月份选择器对话框
   void _showMonthPickerDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    
     showDialog(
       context: context,
       builder: (context) {
@@ -220,6 +247,8 @@ class DatePickerHeader extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
+          elevation: 0,
+          backgroundColor: theme.colorScheme.surface,
           child: MonthPickerDialog(
             initialMonth: controller.currentMonth,
             onMonthSelected: (month) {
@@ -281,6 +310,19 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    // 根据主题确定颜色
+    final primaryColor = theme.colorScheme.primary;
+    final textColor = theme.colorScheme.onSurface;
+    final containerBgColor = isDarkMode 
+        ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+        : const Color(0xFFF5F5F5);
+    final selectedBgColor = isDarkMode
+        ? primaryColor.withOpacity(0.2)
+        : const Color(0xFFE3F2FD);
+    
     return Container(
       width: 280,
       padding: const EdgeInsets.all(16),
@@ -288,12 +330,12 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 标题
-          const Text(
+          Text(
             '选择年份',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -302,7 +344,7 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
           Container(
             height: 200,
             decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F5),
+              color: containerBgColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Stack(
@@ -333,7 +375,7 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
                           ),
                           decoration: isSelected
                               ? BoxDecoration(
-                                  color: const Color(0xFFE3F2FD),
+                                  color: selectedBgColor,
                                   borderRadius: BorderRadius.circular(20),
                                 )
                               : null,
@@ -344,7 +386,7 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
-                              color: isSelected ? Colors.blue : Colors.black87,
+                              color: isSelected ? primaryColor : textColor,
                             ),
                           ),
                         ),
@@ -359,11 +401,11 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
                     decoration: BoxDecoration(
                       border: Border(
                         top: BorderSide(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: theme.colorScheme.outline.withOpacity(0.1),
                           width: 1,
                         ),
                         bottom: BorderSide(
-                          color: Colors.grey.withOpacity(0.1),
+                          color: theme.colorScheme.outline.withOpacity(0.1),
                           width: 1,
                         ),
                       ),
@@ -382,9 +424,9 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
             children: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text(
+                child: Text(
                   '取消',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(color: theme.colorScheme.error),
                 ),
               ),
               const SizedBox(width: 8),
@@ -393,7 +435,7 @@ class _YearPickerDialogState extends State<YearPickerDialog> {
                   widget.onYearSelected(_selectedYear);
                 },
                 style: FilledButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: primaryColor,
                 ),
                 child: const Text('确定'),
               ),
@@ -418,6 +460,20 @@ class MonthPickerDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    
+    // 根据主题确定颜色
+    final primaryColor = theme.colorScheme.primary;
+    final textColor = theme.colorScheme.onSurface;
+    final containerBgColor = isDarkMode 
+        ? theme.colorScheme.surfaceVariant.withOpacity(0.1)
+        : const Color(0xFFF5F5F5);
+    final selectedBgColor = isDarkMode
+        ? primaryColor.withOpacity(0.2)
+        : const Color(0xFFE3F2FD);
+    final borderColor = theme.colorScheme.outline;
+        
     return Container(
       width: 300,
       padding: const EdgeInsets.all(16),
@@ -425,12 +481,12 @@ class MonthPickerDialog extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 标题
-          const Text(
+          Text(
             '选择月份',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: textColor,
             ),
           ),
           const SizedBox(height: 16),
@@ -456,13 +512,13 @@ class MonthPickerDialog extends StatelessWidget {
                 child: Container(
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFFE3F2FD)
-                        : const Color(0xFFF5F5F5),
+                        ? selectedBgColor
+                        : containerBgColor,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
                       color: isSelected
-                          ? Colors.blue
-                          : Colors.grey.withOpacity(0.2),
+                          ? primaryColor
+                          : borderColor.withOpacity(0.2),
                       width: isSelected ? 1.5 : 1,
                     ),
                   ),
@@ -473,13 +529,37 @@ class MonthPickerDialog extends StatelessWidget {
                         fontSize: 14,
                         fontWeight:
                             isSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isSelected ? Colors.blue : Colors.black87,
+                        color: isSelected ? primaryColor : textColor,
                       ),
                     ),
                   ),
                 ),
               );
             },
+          ),
+          
+          const SizedBox(height: 16),
+
+          // 操作按钮
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  '取消',
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                style: FilledButton.styleFrom(
+                  backgroundColor: primaryColor,
+                ),
+                child: const Text('关闭'),
+              ),
+            ],
           ),
         ],
       ),

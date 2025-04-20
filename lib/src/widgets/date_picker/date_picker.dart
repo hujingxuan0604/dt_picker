@@ -111,10 +111,13 @@ class _DatePickerState extends State<DatePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Card(
-      elevation: 4,
+      elevation: 0,
+      color: theme.colorScheme.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
@@ -151,12 +154,14 @@ class _DatePickerState extends State<DatePicker> {
 
   /// 构建日期选择器头部
   Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+    final textColor = theme.colorScheme.onSurface;
+
     // 根据当前视图模式显示不同的标题
     String title = '';
     VoidCallback? onTitleTap;
-
-    print(
-        '构建header，当前视图模式: ${_controller.viewMode}, displayMode: ${widget.displayMode}');
 
     switch (_controller.viewMode) {
       case DatePickerViewMode.day:
@@ -164,9 +169,7 @@ class _DatePickerState extends State<DatePicker> {
         title = '${_controller.currentYear}年${_controller.currentMonth}月';
         if (_controller.showMonth) {
           onTitleTap = () {
-            print('点击标题，从日期视图切换到月份视图');
             _controller.switchToMonthMode();
-            print('切换后视图模式: ${_controller.viewMode}');
           };
         }
         break;
@@ -175,9 +178,7 @@ class _DatePickerState extends State<DatePicker> {
         title = '${_controller.currentYear}年';
         if (_controller.showYear) {
           onTitleTap = () {
-            print('点击标题，从月份视图切换到年份视图');
             _controller.switchToYearMode();
-            print('切换后视图模式: ${_controller.viewMode}');
           };
         }
         break;
@@ -194,7 +195,7 @@ class _DatePickerState extends State<DatePicker> {
       children: [
         // 上一个按钮
         IconButton(
-          icon: const Icon(Icons.chevron_left),
+          icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary),
           onPressed: () {
             switch (_controller.viewMode) {
               case DatePickerViewMode.day:
@@ -219,7 +220,9 @@ class _DatePickerState extends State<DatePicker> {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               color: onTitleTap != null
-                  ? const Color(0xFFEEEEEE)
+                  ? isDarkMode
+                      ? theme.colorScheme.onSurface.withOpacity(0.1)
+                      : const Color(0xFFEEEEEE)
                   : Colors.transparent,
             ),
             child: Row(
@@ -227,18 +230,18 @@ class _DatePickerState extends State<DatePicker> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: textColor,
                   ),
                 ),
                 if (onTitleTap != null) ...[
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Icons.arrow_drop_down,
                     size: 18,
-                    color: Colors.blue,
+                    color: primaryColor,
                   ),
                 ],
               ],
@@ -248,7 +251,7 @@ class _DatePickerState extends State<DatePicker> {
 
         // 下一个按钮
         IconButton(
-          icon: const Icon(Icons.chevron_right),
+          icon: Icon(Icons.chevron_right, color: theme.colorScheme.primary),
           onPressed: () {
             switch (_controller.viewMode) {
               case DatePickerViewMode.day:
@@ -275,6 +278,10 @@ class _DatePickerState extends State<DatePicker> {
     DateTime date,
     bool isActive,
   ) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = theme.colorScheme.primary;
+
     return ElevatedButton(
       onPressed: () {
         _controller.updateSelectedDate(date);
@@ -284,16 +291,19 @@ class _DatePickerState extends State<DatePicker> {
         }
       },
       style: ElevatedButton.styleFrom(
-        foregroundColor: isActive ? Colors.white : Colors.blue,
-        backgroundColor: isActive ? Colors.blue : Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        foregroundColor: isActive ? theme.colorScheme.onPrimary : primaryColor,
+        backgroundColor: isActive ? primaryColor : theme.colorScheme.surface,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(8),
           side: BorderSide(
-            color: isActive ? Colors.transparent : Colors.grey,
+            color: isActive
+                ? Colors.transparent
+                : theme.colorScheme.outline.withOpacity(0.2),
+            width: 1.0,
           ),
         ),
       ),

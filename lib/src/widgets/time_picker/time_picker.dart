@@ -49,26 +49,36 @@ class _TimePickerState extends State<TimePicker> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    // final isDarkMode = theme.brightness == Brightness.dark;
+    
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TimePickerSwitch(controller: _controller),
-              ],
-            ),
-            const SizedBox(height: 12),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
-              child: _controller.mode == model.TimePickerMode.dial
-                  ? TimePickerDial(controller: _controller)
-                  : TimePickerKeyboard(controller: _controller),
-            ),
-          ],
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          decoration: const BoxDecoration(
+            color: Colors.transparent,
+            // 移除边框和背景色
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TimePickerSwitch(controller: _controller),
+                ],
+              ),
+              const SizedBox(height: 12),
+              AnimatedSwitcher(
+                duration: const Duration(milliseconds: 300),
+                child: _controller.mode == model.TimePickerMode.dial
+                    ? TimePickerDial(controller: _controller)
+                    : TimePickerKeyboard(controller: _controller),
+              ),
+            ],
+          ),
         );
       },
     );

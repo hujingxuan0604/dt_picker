@@ -41,10 +41,10 @@ class _TimePickerButtonState extends State<TimePickerButton> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.0),
           ),
-          elevation: 8,
+          elevation: 0,
           backgroundColor: theme.colorScheme.surface,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(8.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -114,6 +114,11 @@ class _TimePickerButtonState extends State<TimePickerButton> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final backgroundColor = isDarkMode
+        ? theme.colorScheme.primaryContainer
+        : theme.colorScheme.primaryContainer;
+        
     return ElevatedButton.icon(
       onPressed: _showTimePickerDialog,
       icon: Icon(Icons.access_time, size: 16, color: theme.colorScheme.primary),
@@ -123,13 +128,14 @@ class _TimePickerButtonState extends State<TimePickerButton> {
         "${widget.showSeconds && (widget.second > 0) ? ':${widget.second.toString().padLeft(2, '0')}' : ''}",
         style: TextStyle(
           fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: theme.colorScheme.primary,
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: theme.colorScheme.primaryContainer.withOpacity(0.3),
+        backgroundColor: backgroundColor,
         foregroundColor: theme.colorScheme.primary,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),

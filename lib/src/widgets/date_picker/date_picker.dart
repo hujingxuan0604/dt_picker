@@ -1,3 +1,4 @@
+import 'package:dt_picker/src/utils/responsive_utils.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/date_picker_controller.dart';
 import 'date_picker_calendar.dart';
@@ -104,6 +105,8 @@ class _DatePickerState extends State<DatePicker> {
 
   /// 控制器变更回调
   void _onControllerChanged() {
+    // 触发UI重建以更新头部显示
+    setState(() {});
     if (widget.onDateChanged != null) {
       widget.onDateChanged!(_controller.selectedDate);
     }
@@ -123,6 +126,7 @@ class _DatePickerState extends State<DatePicker> {
         padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch, // 添加此行以拉伸子组件
           children: [
             // 显示当前年月和导航按钮
             _buildHeader(context),
@@ -155,7 +159,6 @@ class _DatePickerState extends State<DatePicker> {
   /// 构建日期选择器头部
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
     final textColor = theme.colorScheme.onSurface;
 
@@ -190,84 +193,83 @@ class _DatePickerState extends State<DatePicker> {
         break;
     }
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // 上一个按钮
-        IconButton(
-          icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary),
-          onPressed: () {
-            switch (_controller.viewMode) {
-              case DatePickerViewMode.day:
-                _controller.previousMonth();
-                break;
-              case DatePickerViewMode.month:
-                _controller.previousYear();
-                break;
-              case DatePickerViewMode.year:
-                _controller.updateMonth(
-                    _controller.currentYear - 12, _controller.currentMonth);
-                break;
-            }
-          },
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.isDesktop(context) ? 420 : double.infinity,
         ),
-
-        // 标题
-        GestureDetector(
-          onTap: onTitleTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color: onTitleTap != null
-                  ? isDarkMode
-                      ? theme.colorScheme.onSurface.withOpacity(0.1)
-                      : const Color(0xFFEEEEEE)
-                  : Colors.transparent,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // 上一个按钮
+            IconButton(
+              icon: Icon(Icons.chevron_left, color: theme.colorScheme.primary),
+              onPressed: () {
+                switch (_controller.viewMode) {
+                  case DatePickerViewMode.day:
+                    _controller.previousMonth();
+                    break;
+                  case DatePickerViewMode.month:
+                    _controller.previousYear();
+                    break;
+                  case DatePickerViewMode.year:
+                    _controller.updateMonth(
+                        _controller.currentYear - 12, _controller.currentMonth);
+                    break;
+                }
+              },
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                  ),
+
+            // 标题
+            GestureDetector(
+              onTap: onTitleTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                    if (onTitleTap != null) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_drop_down,
+                        size: 18,
+                        color: primaryColor,
+                      ),
+                    ],
+                  ],
                 ),
-                if (onTitleTap != null) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    size: 18,
-                    color: primaryColor,
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-        ),
 
-        // 下一个按钮
-        IconButton(
-          icon: Icon(Icons.chevron_right, color: theme.colorScheme.primary),
-          onPressed: () {
-            switch (_controller.viewMode) {
-              case DatePickerViewMode.day:
-                _controller.nextMonth();
-                break;
-              case DatePickerViewMode.month:
-                _controller.nextYear();
-                break;
-              case DatePickerViewMode.year:
-                _controller.updateMonth(
-                    _controller.currentYear + 12, _controller.currentMonth);
-                break;
-            }
-          },
+            // 下一个按钮
+            IconButton(
+              icon: Icon(Icons.chevron_right, color: theme.colorScheme.primary),
+              onPressed: () {
+                switch (_controller.viewMode) {
+                  case DatePickerViewMode.day:
+                    _controller.nextMonth();
+                    break;
+                  case DatePickerViewMode.month:
+                    _controller.nextYear();
+                    break;
+                  case DatePickerViewMode.year:
+                    _controller.updateMonth(
+                        _controller.currentYear + 12, _controller.currentMonth);
+                    break;
+                }
+              },
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -279,7 +281,6 @@ class _DatePickerState extends State<DatePicker> {
     bool isActive,
   ) {
     final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
     final primaryColor = theme.colorScheme.primary;
 
     return ElevatedButton(
@@ -317,38 +318,45 @@ class _DatePickerState extends State<DatePicker> {
     final yesterday = now.subtract(const Duration(days: 1));
     final dayBeforeYesterday = now.subtract(const Duration(days: 2));
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // 快捷日期按钮
-        Row(
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.isDesktop(context) ? 420 : double.infinity,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildQuickButton(
-              context,
-              "今天",
-              now,
-              DateUtil.isToday(_controller.selectedDate),
+            // 快捷日期按钮
+            Row(
+              children: [
+                _buildQuickButton(
+                  context,
+                  "今天",
+                  now,
+                  DateUtil.isToday(_controller.selectedDate),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickButton(
+                  context,
+                  "昨天",
+                  yesterday,
+                  DateUtil.isYesterday(_controller.selectedDate),
+                ),
+                const SizedBox(width: 8),
+                _buildQuickButton(
+                  context,
+                  "前天",
+                  dayBeforeYesterday,
+                  DateUtil.isDayBeforeYesterday(_controller.selectedDate),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            _buildQuickButton(
-              context,
-              "昨天",
-              yesterday,
-              DateUtil.isYesterday(_controller.selectedDate),
-            ),
-            const SizedBox(width: 8),
-            _buildQuickButton(
-              context,
-              "前天",
-              dayBeforeYesterday,
-              DateUtil.isDayBeforeYesterday(_controller.selectedDate),
-            ),
+
+            // 时间选择器组件（如果有）
+            if (widget.timePickerWidget != null) widget.timePickerWidget!,
           ],
         ),
-
-        // 时间选择器组件（如果有）
-        if (widget.timePickerWidget != null) widget.timePickerWidget!,
-      ],
+      ),
     );
   }
 }

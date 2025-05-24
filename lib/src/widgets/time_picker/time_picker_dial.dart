@@ -1,3 +1,4 @@
+import 'package:dt_picker/src/utils/responsive_utils.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../controllers/time_picker_controller.dart';
@@ -17,15 +18,16 @@ class TimePickerDial extends StatefulWidget {
 
 class _TimePickerDialState extends State<TimePickerDial> {
   TimePickerMode _currentMode = TimePickerMode.hour;
+
   // 用于指针拖动
-  Offset _pointerPosition = Offset.zero;
   bool _isDragging = false;
 
   @override
   void initState() {
     super.initState();
     // 如果不显示秒，则强制使用小时模式
-    if (!widget.controller.showSeconds && _currentMode == TimePickerMode.second) {
+    if (!widget.controller.showSeconds &&
+        _currentMode == TimePickerMode.second) {
       _currentMode = TimePickerMode.hour;
     }
   }
@@ -43,20 +45,18 @@ class _TimePickerDialState extends State<TimePickerDial> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    final size = MediaQuery.of(context).size;
-    // 调整表盘大小，使用屏幕宽度的0.4倍，但不超过250
-    final dialSize = math.min(size.width * 0.5, 250.0);
-    // 增加外圆半径，让外侧数字有更多空间显示
+
+    // 使用 ResponsiveUtils 获取响应式尺寸
+    final dialSize = ResponsiveUtils.getDialSize(context);
     final outerRadius = (dialSize / 2.0) * 0.85;
     final innerRadius = outerRadius * 0.6;
-    
-    // 设置表盘颜色
+
     final dialBackgroundColor = isDarkMode
-        ? theme.colorScheme.surfaceVariant.withOpacity(0.12)
-        : theme.colorScheme.surfaceVariant.withOpacity(0.2);
-    
+        ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.12)
+        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
+
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: ResponsiveUtils.getDialPadding(context),
       decoration: const BoxDecoration(
         color: Colors.transparent,
         // 移除边框和背景色
@@ -106,12 +106,14 @@ class _TimePickerDialState extends State<TimePickerDial> {
           // 表盘
           GestureDetector(
             onPanStart: (details) {
-              _updatePointerPosition(details.localPosition, dialSize, outerRadius, innerRadius);
+              _updatePointerPosition(
+                  details.localPosition, dialSize, outerRadius, innerRadius);
               _isDragging = true;
             },
             onPanUpdate: (details) {
               if (_isDragging) {
-                _updatePointerPosition(details.localPosition, dialSize, outerRadius, innerRadius);
+                _updatePointerPosition(
+                    details.localPosition, dialSize, outerRadius, innerRadius);
               }
             },
             onPanEnd: (_) {
@@ -142,7 +144,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
                       final angle = (hour * 30 - 90) * (math.pi / 180);
                       final x = outerRadius * math.cos(angle);
                       final y = outerRadius * math.sin(angle);
-                      
+
                       return Positioned(
                         left: dialSize / 2 + x - 10,
                         top: dialSize / 2 + y - 10,
@@ -185,7 +187,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
                       final angle = ((index + 1) * 30 - 90) * (math.pi / 180);
                       final x = innerRadius * math.cos(angle);
                       final y = innerRadius * math.sin(angle);
-                      
+
                       return Positioned(
                         left: dialSize / 2 + x - 10,
                         top: dialSize / 2 + y - 10,
@@ -202,17 +204,24 @@ class _TimePickerDialState extends State<TimePickerDial> {
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: hour == widget.controller.time.hour || (hour == 24 && widget.controller.time.hour == 0)
+                              color: hour == widget.controller.time.hour ||
+                                      (hour == 24 &&
+                                          widget.controller.time.hour == 0)
                                   ? theme.colorScheme.primary
                                   : Colors.transparent,
                             ),
                             child: Text(
                               hour == 24 ? '0' : hour.toString(),
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: hour == widget.controller.time.hour || (hour == 24 && widget.controller.time.hour == 0)
+                                color: hour == widget.controller.time.hour ||
+                                        (hour == 24 &&
+                                            widget.controller.time.hour == 0)
                                     ? theme.colorScheme.onPrimary
                                     : theme.colorScheme.onSurface,
-                                fontWeight: hour == widget.controller.time.hour || (hour == 24 && widget.controller.time.hour == 0)
+                                fontWeight: hour ==
+                                            widget.controller.time.hour ||
+                                        (hour == 24 &&
+                                            widget.controller.time.hour == 0)
                                     ? FontWeight.bold
                                     : FontWeight.normal,
                               ),
@@ -231,7 +240,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
                       final angle = (minute * 6 - 90) * (math.pi / 180);
                       final x = outerRadius * math.cos(angle);
                       final y = outerRadius * math.sin(angle);
-                      
+
                       return Positioned(
                         left: dialSize / 2 + x - 10,
                         top: dialSize / 2 + y - 10,
@@ -258,9 +267,10 @@ class _TimePickerDialState extends State<TimePickerDial> {
                                 color: minute == widget.controller.time.minute
                                     ? theme.colorScheme.onSecondary
                                     : theme.colorScheme.onSurface,
-                                fontWeight: minute == widget.controller.time.minute
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                                fontWeight:
+                                    minute == widget.controller.time.minute
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
                               ),
                             ),
                           ),
@@ -277,7 +287,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
                       final angle = (second * 6 - 90) * (math.pi / 180);
                       final x = outerRadius * math.cos(angle);
                       final y = outerRadius * math.sin(angle);
-                      
+
                       return Positioned(
                         left: dialSize / 2 + x - 10,
                         top: dialSize / 2 + y - 10,
@@ -334,23 +344,23 @@ class _TimePickerDialState extends State<TimePickerDial> {
   }
 
   // 更新指针位置并选择对应的时间值
-  void _updatePointerPosition(Offset position, double dialSize, double outerRadius, double innerRadius) {
+  void _updatePointerPosition(Offset position, double dialSize,
+      double outerRadius, double innerRadius) {
     final center = Offset(dialSize / 2, dialSize / 2);
     final relativePos = position - center;
-    
-    setState(() {
-      _pointerPosition = relativePos;
-    });
-    
+
+    setState(() {});
+
     // 计算角度（0-360度）
-    final angle = (math.atan2(relativePos.dy, relativePos.dx) * 180 / math.pi + 90) % 360;
-    
+    final angle =
+        (math.atan2(relativePos.dy, relativePos.dx) * 180 / math.pi + 90) % 360;
+
     // 根据当前模式和角度更新时间
     if (_currentMode == TimePickerMode.hour) {
       // 检查是外环还是内环（基于距离）
       final distance = relativePos.distance;
       final thresholdRadius = (outerRadius + innerRadius) / 2;
-      
+
       if (distance < thresholdRadius) {
         // 内环 (13-24)
         final hourIndex = ((angle / 30).round()) % 12;
@@ -373,18 +383,20 @@ class _TimePickerDialState extends State<TimePickerDial> {
         hour: widget.controller.time.hour,
         minute: minute,
       ));
-    } else if (widget.controller.showSeconds && _currentMode == TimePickerMode.second) {
+    } else if (widget.controller.showSeconds &&
+        _currentMode == TimePickerMode.second) {
       final second = ((angle / 6).round()) % 60;
       widget.controller.updateSecond(second);
     }
   }
 
   // 构建小时指针
-  Widget _buildHourHand(double dialSize, ThemeData theme, double outerRadius, double innerRadius) {
+  Widget _buildHourHand(double dialSize, ThemeData theme, double outerRadius,
+      double innerRadius) {
     final hour = widget.controller.time.hour;
     final isInnerHour = (hour > 12 && hour <= 23) || hour == 0;
     final handLength = isInnerHour ? innerRadius - 15 : outerRadius - 15;
-    
+
     // 使用CustomPaint直接绘制指向特定小时位置的指针
     return CustomPaint(
       size: Size(dialSize, dialSize),
@@ -401,7 +413,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
   // 构建分钟指针
   Widget _buildMinuteHand(double dialSize, ThemeData theme, double radius) {
     final minute = widget.controller.time.minute;
-    
+
     return CustomPaint(
       size: Size(dialSize, dialSize),
       painter: ClockHandPainter(
@@ -417,7 +429,7 @@ class _TimePickerDialState extends State<TimePickerDial> {
   // 构建秒针
   Widget _buildSecondHand(double dialSize, ThemeData theme, double radius) {
     final second = widget.controller.second;
-    
+
     return CustomPaint(
       size: Size(dialSize, dialSize),
       painter: ClockHandPainter(
@@ -438,13 +450,13 @@ class _TimePickerDialState extends State<TimePickerDial> {
   }) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
-    final backgroundColor = isSelected 
+
+    final backgroundColor = isSelected
         ? isDarkMode
             ? theme.colorScheme.primary.withOpacity(0.2)
             : theme.colorScheme.primaryContainer
         : Colors.transparent;
-    
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -456,7 +468,9 @@ class _TimePickerDialState extends State<TimePickerDial> {
         child: Text(
           value,
           style: theme.textTheme.headlineMedium?.copyWith(
-            color: isSelected ? theme.colorScheme.primary : theme.colorScheme.onSurface,
+            color: isSelected
+                ? theme.colorScheme.primary
+                : theme.colorScheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -493,22 +507,22 @@ class HandPainter extends CustomPainter {
     // angle已经是从12点钟方向开始的弧度值
     final x = center.dx + length * math.cos(angle);
     final y = center.dy + length * math.sin(angle);
-    
+
     canvas.drawLine(center, Offset(x, y), paint);
   }
 
   @override
   bool shouldRepaint(covariant HandPainter oldDelegate) {
-    return oldDelegate.angle != angle || 
-           oldDelegate.length != length || 
-           oldDelegate.color != color;
+    return oldDelegate.angle != angle ||
+        oldDelegate.length != length ||
+        oldDelegate.color != color;
   }
 }
 
 // 专门用于时钟指针的画笔
 class ClockHandPainter extends CustomPainter {
   final int valueCount; // 总刻度数量（小时12，分钟/秒60）
-  final int value;      // 当前值 (小时0-11, 分钟/秒0-59)
+  final int value; // 当前值 (小时0-11, 分钟/秒0-59)
   final double length;
   final Color color;
   final double strokeWidth;
@@ -530,7 +544,7 @@ class ClockHandPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final center = Offset(size.width / 2, size.height / 2);
-    
+
     // 计算指针角度（弧度）
     // 12点钟方向为0值，顺时针旋转
     // 例如，对于小时，0表示12点方向，3表示3点方向，等等
@@ -539,26 +553,26 @@ class ClockHandPainter extends CustomPainter {
       // 指向12点方向
       angle = -math.pi / 2;
     } else {
-      // 根据值计算角度 
+      // 根据值计算角度
       // 例如，小时：每小时30度(2π/12)；分钟和秒：每单位6度(2π/60)
       final unitAngle = 2 * math.pi / valueCount;
       angle = value * unitAngle - math.pi / 2;
     }
-    
+
     // 计算指针端点位置
     final x = center.dx + length * math.cos(angle);
     final y = center.dy + length * math.sin(angle);
-    
+
     // 绘制指针
     canvas.drawLine(center, Offset(x, y), paint);
   }
 
   @override
   bool shouldRepaint(covariant ClockHandPainter oldDelegate) {
-    return oldDelegate.value != value || 
-           oldDelegate.valueCount != valueCount ||
-           oldDelegate.length != length || 
-           oldDelegate.color != color;
+    return oldDelegate.value != value ||
+        oldDelegate.valueCount != valueCount ||
+        oldDelegate.length != length ||
+        oldDelegate.color != color;
   }
 }
 
@@ -566,4 +580,4 @@ enum TimePickerMode {
   hour,
   minute,
   second,
-} 
+}

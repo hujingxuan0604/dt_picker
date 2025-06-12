@@ -1,5 +1,22 @@
 import 'package:flutter/material.dart';
 import '../../controllers/date_picker_controller.dart';
+import '../../utils/responsive_utils.dart'; // 确保导入响应式工具类
+
+// 月份名称列表
+final List<String> monthNames = [
+  '一月',
+  '二月',
+  '三月',
+  '四月',
+  '五月',
+  '六月',
+  '七月',
+  '八月',
+  '九月',
+  '十月',
+  '十一月',
+  '十二月'
+];
 
 /// 日期选择器日历组件
 class DatePickerCalendar extends StatefulWidget {
@@ -52,10 +69,17 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
 
   @override
   Widget build(BuildContext context) {
-    // 直接根据控制器状态构建不同的日历组件
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 300),
-      child: _buildCalendarContent(context),
+    // 限制日历组件在大屏幕上的最大宽度
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: ResponsiveUtils.isDesktop(context) ? 420 : double.infinity,
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _buildCalendarContent(context),
+        ),
+      ),
     );
   }
 
@@ -74,28 +98,17 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
   /// 构建日期视图
   Widget _buildDayView(BuildContext context) {
     final theme = Theme.of(context);
-    //final isDarkMode = theme.brightness == Brightness.dark;
     final currentYear = widget.controller.currentYear;
     final currentMonth = widget.controller.currentMonth;
 
     // 为日期视图添加key，以便在月份切换时启用动画
-    final viewKey = ValueKey('day-${currentYear}-${currentMonth}');
-
-    // 根据主题确定颜色
-    // final primaryColor = theme.colorScheme.primary;
-    // final onPrimaryColor = theme.colorScheme.onPrimary;
-    // final todayColor =
-    //     isDarkMode ? primaryColor.withOpacity(0.3) : const Color(0xFFE3F2FD);
-    // final textColor = isDarkMode ? theme.colorScheme.onSurface : Colors.black87;
-    // final disabledTextColor = theme.colorScheme.onSurface.withOpacity(0.4);
-    // final otherMonthTextColor = theme.colorScheme.onSurface.withOpacity(0.3);
+    final viewKey = ValueKey('day-$currentYear-$currentMonth');
 
     // 获取当前月的第一天和天数
     final firstDayOfMonth = DateTime(currentYear, currentMonth, 1);
     final daysInMonth = DateTime(currentYear, currentMonth + 1, 0).day;
 
     // 计算本月第一天是星期几（以周一为1，周日为7）
-    // 我们不需要取模，直接使用weekday，它已经是1-7（周一到周日）
     int firstWeekday = firstDayOfMonth.weekday;
 
     // 因为我们的日历是从周一开始的，所以要调整值
@@ -119,8 +132,6 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     }
 
     // 计算需要多少行来显示本月日期
-    // 第一天的星期几 + 当月的总天数
-    final int totalPositions = firstWeekdayAdjusted + daysInMonth;
     // 强制使用6行来显示日历，保持布局一致性
     const int rows = 6;
 
@@ -133,7 +144,10 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
       calendarDays.add(DateTime(currentYear, currentMonth + 1, i));
     }
 
-    // 日历现在总是显示42个日期（6行×7列）
+    // 根据屏幕尺寸调整网格间距
+    double gridSpacing = ResponsiveUtils.isMobile(context)
+        ? 1
+        : (ResponsiveUtils.isTablet(context) ? 2 : 3);
 
     return Column(
       key: viewKey,
@@ -145,20 +159,16 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             childAspectRatio: 1.0,
-            mainAxisSpacing: 2,
-            crossAxisSpacing: 2,
+            mainAxisSpacing: gridSpacing,
+            crossAxisSpacing: gridSpacing,
           ),
           itemCount: calendarDays.length,
           itemBuilder: (context, index) {
             final date = calendarDays[index];
             final isCurrentMonth = date.month == currentMonth;
-            // final isToday = _isToday(date);
-            // final isSelected = _isSelectedDate(date);
-            // final isDisabled = _isDateDisabled(date);
-
             return _buildDayCell(context, date, isCurrentMonth, theme);
           },
         ),
@@ -181,30 +191,24 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     final disabledTextColor = theme.colorScheme.onSurface.withOpacity(0.4);
     final selectedTextColor = theme.colorScheme.primary;
 
-    // 月份名称列表
-    final List<String> monthNames = [
-      '一月',
-      '二月',
-      '三月',
-      '四月',
-      '五月',
-      '六月',
-      '七月',
-      '八月',
-      '九月',
-      '十月',
-      '十一月',
-      '十二月'
-    ];
+    // 根据屏幕尺寸调整网格间距和字体大小
+    double gridSpacing = ResponsiveUtils.isMobile(context)
+        ? 6
+        : (ResponsiveUtils.isTablet(context) ? 8 : 10);
+    double fontSize = ResponsiveUtils.isMobile(context)
+        ? 13
+        : (ResponsiveUtils.isTablet(context) ? 14 : 16);
+    double childAspectRatio = ResponsiveUtils.isMobile(context) ? 1.3 : 1.5;
+    double borderRadius = ResponsiveUtils.isMobile(context) ? 4 : 6;
 
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
-        childAspectRatio: 1.5,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        childAspectRatio: childAspectRatio,
+        crossAxisSpacing: gridSpacing,
+        mainAxisSpacing: gridSpacing,
       ),
       itemCount: 12,
       itemBuilder: (context, index) {
@@ -218,7 +222,8 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
           child: Container(
             decoration: BoxDecoration(
               color: isCurrentMonth ? selectedBgColor : normalBgColor,
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(
+                  ResponsiveUtils.isMobile(context) ? 4 : 6),
               border: Border.all(
                 color: isCurrentMonth
                     ? primaryColor
@@ -230,7 +235,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
             child: Text(
               monthNames[index],
               style: TextStyle(
-                fontSize: 14,
+                fontSize: fontSize,
                 color: isDisabled
                     ? disabledTextColor
                     : isCurrentMonth
@@ -251,6 +256,9 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     final isDarkMode = theme.brightness == Brightness.dark;
     final selectedYear = widget.controller.selectedDate.year;
 
+    // 添加唯一key，确保年份变化时视图会重新构建
+    final viewKey = ValueKey('year-${widget.controller.currentYear}');
+
     // 根据主题确定颜色
     final primaryColor = theme.colorScheme.primary;
     final selectedBgColor =
@@ -264,50 +272,78 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     final int startYear = widget.controller.currentYear - 5;
     final List<int> years = List.generate(12, (index) => startYear + index);
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 3,
-        childAspectRatio: 1.5,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: years.length,
-      itemBuilder: (context, index) {
-        final year = years[index];
-        final isSelected = year == selectedYear;
-        final isDisabled = _isYearDisabled(year);
+    // 根据屏幕尺寸调整网格间距和字体大小
+    double gridSpacing = ResponsiveUtils.isMobile(context)
+        ? 6
+        : (ResponsiveUtils.isTablet(context) ? 8 : 10);
+    double fontSize = ResponsiveUtils.isMobile(context)
+        ? 13
+        : (ResponsiveUtils.isTablet(context) ? 14 : 16);
+    double childAspectRatio = ResponsiveUtils.isMobile(context) ? 1.3 : 1.5;
+    double borderRadius = ResponsiveUtils.isMobile(context) ? 4 : 6;
 
-        return GestureDetector(
-          onTap: isDisabled ? null : () => _selectYear(year),
-          child: Container(
-            decoration: BoxDecoration(
-              color: isSelected ? selectedBgColor : normalBgColor,
-              borderRadius: BorderRadius.circular(4),
-              border: Border.all(
-                color: isSelected
-                    ? primaryColor
-                    : theme.colorScheme.outline.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              year.toString(),
-              style: TextStyle(
-                fontSize: 14,
-                color: isDisabled
-                    ? disabledTextColor
-                    : isSelected
-                        ? selectedTextColor
-                        : textColor,
-                fontWeight: isSelected ? FontWeight.bold : null,
-              ),
+    return Column(
+      key: viewKey, // 添加唯一key
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // 添加年份范围显示
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Text(
+            '$startYear - ${startYear + 11}',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
           ),
-        );
-      },
+        ),
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: childAspectRatio,
+            crossAxisSpacing: gridSpacing,
+            mainAxisSpacing: gridSpacing,
+          ),
+          itemCount: years.length,
+          itemBuilder: (context, index) {
+            final year = years[index];
+            final isSelected = year == selectedYear;
+            final isDisabled = _isYearDisabled(year);
+
+            return GestureDetector(
+              onTap: isDisabled ? null : () => _selectYear(year),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isSelected ? selectedBgColor : normalBgColor,
+                  borderRadius: BorderRadius.circular(borderRadius),
+                  border: Border.all(
+                    color: isSelected
+                        ? primaryColor
+                        : theme.colorScheme.outline.withOpacity(0.3),
+                    width: isSelected ? 1.5 : 1,
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  year.toString(),
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    color: isDisabled
+                        ? disabledTextColor
+                        : isSelected
+                            ? selectedTextColor
+                            : textColor,
+                    fontWeight: isSelected ? FontWeight.bold : null,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -379,22 +415,6 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     return DateTime(year, month + 1, 0).day;
   }
 
-  /// 判断日期是否为今天
-  // bool _isToday(DateTime date) {
-  //   final now = DateTime.now();
-  //   return date.year == now.year &&
-  //       date.month == now.month &&
-  //       date.day == now.day;
-  // }
-
-  // /// 判断日期是否为选中的日期
-  // bool _isSelectedDate(DateTime date) {
-  //   final selected = widget.controller.selectedDate;
-  //   return date.year == selected.year &&
-  //       date.month == selected.month &&
-  //       date.day == selected.day;
-  // }
-
   /// 判断日期是否在可选范围内
   bool _isDateDisabled(DateTime date) {
     if (widget.firstDate != null && date.isBefore(widget.firstDate!)) {
@@ -444,14 +464,22 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     // 星期几名称，从周一到周日
     const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
 
+    // 根据屏幕尺寸调整头部高度和字体大小
+    double headerHeight = ResponsiveUtils.isMobile(context)
+        ? 28
+        : (ResponsiveUtils.isTablet(context) ? 32 : 36);
+    double fontSize = ResponsiveUtils.isMobile(context)
+        ? 12
+        : (ResponsiveUtils.isTablet(context) ? 13 : 14);
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: List.generate(7, (index) {
         // 在我们的数组中，索引5是周六，索引6是周日
         final isWeekend = index == 5 || index == 6;
         return SizedBox(
-          width: 28,
-          height: 28,
+          width: headerHeight,
+          height: headerHeight,
           child: Center(
             child: Text(
               weekdays[index],
@@ -460,6 +488,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
                     ? theme.colorScheme.primary.withOpacity(0.8)
                     : theme.colorScheme.onSurface.withOpacity(0.7),
                 fontWeight: FontWeight.w500,
+                fontSize: fontSize,
               ),
             ),
           ),
@@ -541,22 +570,16 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     // 添加提示文本
     String? tooltip;
     if (!isCurrentMonth) {
-      final monthNames = [
-        '一月',
-        '二月',
-        '三月',
-        '四月',
-        '五月',
-        '六月',
-        '七月',
-        '八月',
-        '九月',
-        '十月',
-        '十一月',
-        '十二月'
-      ];
       tooltip = '${date.year}年${monthNames[date.month - 1]} ${date.day}日';
     }
+
+    // 根据屏幕尺寸调整单元格大小和字体大小
+    double cellSize = ResponsiveUtils.getCalendarCellSize(context);
+    double fontSize = ResponsiveUtils.isMobile(context)
+        ? (!isCurrentMonth ? 10 : 12)
+        : (ResponsiveUtils.isTablet(context)
+            ? (!isCurrentMonth ? 11 : 13)
+            : (!isCurrentMonth ? 12 : 14));
 
     return Tooltip(
       message: tooltip ?? '',
@@ -577,8 +600,8 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
               },
         customBorder: const CircleBorder(),
         child: Container(
-          width: 28,
-          height: 28,
+          width: cellSize,
+          height: cellSize,
           decoration: BoxDecoration(
             color: backgroundColor,
             shape: BoxShape.circle,
@@ -591,8 +614,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
                 color: textColor,
                 fontWeight:
                     isSelected || isToday ? FontWeight.bold : FontWeight.normal,
-                // 非当月日期字体略小
-                fontSize: !isCurrentMonth ? 11 : null,
+                fontSize: fontSize,
               ),
             ),
           ),

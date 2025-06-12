@@ -49,9 +49,6 @@ class _TimePickerState extends State<TimePicker> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    // final isDarkMode = theme.brightness == Brightness.dark;
-    
     return ListenableBuilder(
       listenable: _controller,
       builder: (context, _) {
@@ -59,7 +56,6 @@ class _TimePickerState extends State<TimePicker> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: const BoxDecoration(
             color: Colors.transparent,
-            // 移除边框和背景色
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -83,4 +79,4 @@ class _TimePickerState extends State<TimePicker> {
       },
     );
   }
-} 
+}

@@ -210,12 +210,24 @@ class DatePickerController extends ChangeNotifier {
   /// 下一年
   void nextYear() {
     _currentYear++;
+    // 确保在年份视图模式下正确更新
+    if (_viewMode == DatePickerViewMode.year) {
+    // 强制触发更新
     notifyListeners();
+    } else {
+    notifyListeners();
+    }
   }
 
   /// 上一年
   void previousYear() {
     _currentYear--;
+    // 确保在年份视图模式下正确更新
+    if (_viewMode == DatePickerViewMode.year) {
+    // 强制触发更新
     notifyListeners();
+    } else {
+    notifyListeners();
+    }
   }
-} 
+}

@@ -1,3 +1,6 @@
+import 'dart:math' as math;
+
+import 'package:dt_picker/src/utils/responsive_utils.dart';
 import 'package:flutter/material.dart';
 import '../../widgets/time_picker/time_picker.dart';
 
@@ -31,6 +34,14 @@ class _TimePickerButtonState extends State<TimePickerButton> {
   // 显示时间选择对话框
   Future<void> _showTimePickerDialog() async {
     final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+    
+    final dialogWidth = ResponsiveUtils.isMobile(context)
+        ? size.width * 0.9
+        : ResponsiveUtils.isTablet(context)
+            ? math.min(size.width * 0.7, 480.0)
+            : math.min(size.width * 0.5, 560.0);
+    
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext context) {
@@ -43,8 +54,9 @@ class _TimePickerButtonState extends State<TimePickerButton> {
           ),
           elevation: 0,
           backgroundColor: theme.colorScheme.surface,
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
+          child: Container(
+            width: dialogWidth,
+            padding: ResponsiveUtils.getDialPadding(context),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -147,4 +159,4 @@ class _TimePickerButtonState extends State<TimePickerButton> {
       ),
     );
   }
-} 
+}

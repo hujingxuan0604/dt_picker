@@ -1,3 +1,4 @@
+import 'package:dt_picker/src/utils/responsive_utils.dart';
 import 'package:flutter/material.dart';
 import '../../controllers/time_picker_controller.dart';
 
@@ -76,7 +77,7 @@ class TimePickerKeyboard extends StatelessWidget {
     final theme = Theme.of(context);
     
     return SizedBox(
-      width: 60,
+      width: ResponsiveUtils.getTimeInputWidth(context),
       child: TextField(
         controller: controller,
         maxLength: maxLength,

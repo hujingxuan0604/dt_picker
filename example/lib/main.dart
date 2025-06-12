@@ -20,12 +20,12 @@ class MyApp extends StatelessWidget {
       home: const MyHomePage(),
     );
   }
-  
+
   // 获取亮色主题
   ThemeData _getLightTheme() {
     const primaryColor = Color(0xFF2196F3);
     const secondaryColor = Color(0xFF03A9F4);
-    
+
     return ThemeData(
       useMaterial3: true,
       primaryColor: primaryColor,
@@ -52,7 +52,7 @@ class MyApp extends StatelessWidget {
   ThemeData _getDarkTheme() {
     const primaryColor = Color(0xFF2196F3);
     const secondaryColor = Color(0xFF03A9F4);
-    
+
     return ThemeData.dark().copyWith(
       useMaterial3: true,
       primaryColor: primaryColor,
@@ -94,7 +94,42 @@ class _MyHomePageState extends State<MyHomePage> {
   DateTimeResult? _dateTimeNoTimeResult; // 仅日期（无时间）
   DateTimeResult? _dateTimeWithQuickButtons; // 带快捷按钮的日期时间
 
-  // 显示年月选择对话框
+  // 新增：全局控制器，便于类型监听演示
+  late final DatePickerController _datePickerController;
+  late final DatePickerController _yearMonthController;
+  late final TimePickerController _timePickerController;
+
+  @override
+  void initState() {
+    super.initState();
+    _datePickerController = DatePickerController();
+    _yearMonthController =
+        DatePickerController(displayMode: DatePickerDisplayMode.yearMonth);
+    _timePickerController = TimePickerController();
+    // 示例：只监听日期变更
+    _datePickerController.addListenerForType(DatePickerChangedType.selectedDate,
+        () {
+      setState(() {});
+    });
+    // 示例：只监听月份变更
+    _yearMonthController.addListenerForType(DatePickerChangedType.month, () {
+      setState(() {});
+    });
+    // 示例：只监听时间变更
+    _timePickerController.addListenerForType(TimePickerChangedType.time, () {
+      setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _datePickerController.dispose();
+    _yearMonthController.dispose();
+    _timePickerController.dispose();
+    super.dispose();
+  }
+
+  // 1. 年月选择
   Future<void> _showYearMonthPicker() async {
     DateTime? selectedDate = _yearMonthResult?.date ?? DateTime.now();
     final result = await showModalBottomSheet<DateTime>(
@@ -117,7 +152,6 @@ class _MyHomePageState extends State<MyHomePage> {
         onConfirm: () => Navigator.pop(context, selectedDate),
       ),
     );
-
     if (result != null) {
       setState(() {
         _yearMonthResult = DateTimeResult(
@@ -128,7 +162,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示日期选择对话框
+  // 2. 仅日期选择
   Future<void> _showDatePicker() async {
     DateTime? selectedDate = _dateOnlyResult ?? DateTime.now();
     final result = await showModalBottomSheet<DateTime>(
@@ -147,12 +181,10 @@ class _MyHomePageState extends State<MyHomePage> {
           onDateChanged: (date) {
             selectedDate = date;
           },
-          showQuickButtons: true,
         ),
         onConfirm: () => Navigator.pop(context, selectedDate),
       ),
     );
-
     if (result != null) {
       setState(() {
         _dateOnlyResult = result;
@@ -160,11 +192,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示日期时间选择对话框
+  // 3. 日期时间选择
   Future<void> _showDateTimePicker() async {
     DateTimeResult? selectedResult;
-    final initialDate = _dateTimePickerResult?.date ?? DateTime.now();
-
+    DateTime selectedDate = _dateTimePickerResult?.date ?? DateTime.now();
     final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
       isScrollControlled: true,
@@ -174,12 +205,13 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期和时间',
         child: DateTimePicker(
-          initialDate: initialDate,
+          initialDate: selectedDate,
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
           showQuickButtons: false,
           displayMode: DatePickerDisplayMode.dateTime,
           onDateTimeChanged: (date) {
+            selectedDate = date;
             selectedResult = DateTimeResult(
               date: date,
               time: TimeOfDay.fromDateTime(date),
@@ -191,7 +223,6 @@ class _MyHomePageState extends State<MyHomePage> {
         onConfirm: () => Navigator.pop(context, selectedResult),
       ),
     );
-
     if (result != null) {
       setState(() {
         _dateTimePickerResult = result;
@@ -199,11 +230,10 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示带快捷按钮的日期时间选择对话框
+  // 4. 带快捷按钮的日期时间选择
   Future<void> _showDateTimePickerWithQuickButtons() async {
     DateTimeResult? selectedResult;
-    final initialDate = _dateTimeWithQuickButtons?.date ?? DateTime.now();
-
+    DateTime selectedDate = _dateTimeWithQuickButtons?.date ?? DateTime.now();
     final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
       isScrollControlled: true,
@@ -213,13 +243,14 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期和时间',
         child: DateTimePicker(
-          initialDate: initialDate,
+          initialDate: selectedDate,
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
           showQuickButtons: true,
           showSeconds: true,
           displayMode: DatePickerDisplayMode.dateTime,
           onDateTimeChanged: (date) {
+            selectedDate = date;
             selectedResult = DateTimeResult(
               date: date,
               time: TimeOfDay.fromDateTime(date),
@@ -231,7 +262,6 @@ class _MyHomePageState extends State<MyHomePage> {
         onConfirm: () => Navigator.pop(context, selectedResult),
       ),
     );
-
     if (result != null) {
       setState(() {
         _dateTimeWithQuickButtons = result;
@@ -239,12 +269,11 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示日期选择对话框(带快捷按钮)
+  // 5. 仅日期（带快捷按钮）
   Future<void> _showDatePickerWithQuickButtons() async {
     DateTimeResult? selectedResult;
-    final initialDate =
+    DateTime selectedDate =
         _dateTimeNoTimeResult?.date ?? _dateOnlyResult ?? DateTime.now();
-
     final result = await showModalBottomSheet<DateTimeResult>(
       context: context,
       isScrollControlled: true,
@@ -254,12 +283,13 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context) => _buildBottomSheetDatePicker(
         title: '选择日期',
         child: DatePicker(
-          initialDate: initialDate,
+          initialDate: selectedDate,
           firstDate: DateTime(2000),
           lastDate: DateTime(2100),
           displayMode: DatePickerDisplayMode.full,
           showQuickButtons: true,
           onDateChanged: (date) {
+            selectedDate = date;
             selectedResult = DateTimeResult(
               date: date,
               dateDisplayMode: DatePickerDisplayMode.full,
@@ -269,7 +299,6 @@ class _MyHomePageState extends State<MyHomePage> {
         onConfirm: () => Navigator.pop(context, selectedResult),
       ),
     );
-
     if (result != null) {
       setState(() {
         _dateTimeNoTimeResult = result;
@@ -277,7 +306,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示时间选择对话框（含秒）
+  // 6. 选择时间（含秒）
   Future<void> _showTimePickerWithSeconds() async {
     TimeOfDay selectedTime = _timeWithSecondsResult?.time ?? TimeOfDay.now();
     int selectedSecond = _timeWithSecondsResult?.second ?? 0;
@@ -299,13 +328,14 @@ class _MyHomePageState extends State<MyHomePage> {
             selectedSecond = second;
           },
         ),
-        onConfirm: () => Navigator.pop(
-          context,
-          TimeWithSeconds(selectedTime, selectedSecond),
-        ),
+        onConfirm: () {
+          Navigator.pop(
+            context,
+            TimeWithSeconds(selectedTime, selectedSecond),
+          );
+        },
       ),
     );
-
     if (result != null) {
       setState(() {
         _timeWithSecondsResult = result;
@@ -313,7 +343,7 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // 显示时间选择对话框（不含秒）
+  // 7. 选择时间（不含秒）
   Future<void> _showTimePicker() async {
     TimeOfDay selectedTime = _timeNoSecondsResult?.time ?? TimeOfDay.now();
     int selectedSecond = _timeNoSecondsResult?.second ?? 0;
@@ -335,13 +365,14 @@ class _MyHomePageState extends State<MyHomePage> {
             selectedSecond = second;
           },
         ),
-        onConfirm: () => Navigator.pop(
-          context,
-          TimeWithSeconds(selectedTime, selectedSecond),
-        ),
+        onConfirm: () {
+          Navigator.pop(
+            context,
+            TimeWithSeconds(selectedTime, selectedSecond),
+          );
+        },
       ),
     );
-
     if (result != null) {
       setState(() {
         _timeNoSecondsResult = result;
@@ -358,7 +389,7 @@ class _MyHomePageState extends State<MyHomePage> {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final mediaQuery = MediaQuery.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -368,8 +399,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       padding: EdgeInsets.only(
-        left: 16.0, 
-        right: 16.0, 
+        left: 16.0,
+        right: 16.0,
         top: 8.0,
         bottom: mediaQuery.viewInsets.bottom + 16.0,
       ),
@@ -392,7 +423,7 @@ class _MyHomePageState extends State<MyHomePage> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: isDarkMode 
+                  color: isDarkMode
                       ? theme.colorScheme.primary.withOpacity(0.2)
                       : const Color(0xFFE3F2FD),
                   borderRadius: BorderRadius.circular(12),
@@ -467,7 +498,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
     );
   }
-  
+
   // 构建底部弹出的时间选择器
   Widget _buildBottomSheetTimePicker({
     required String title,
@@ -476,7 +507,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }) {
     final theme = Theme.of(context);
     final mediaQuery = MediaQuery.of(context);
-    
+
     return Container(
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
@@ -486,8 +517,8 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       padding: EdgeInsets.only(
-        left: 16.0, 
-        right: 16.0, 
+        left: 16.0,
+        right: 16.0,
         top: 16.0,
         bottom: mediaQuery.viewInsets.bottom + 16.0,
       ),
@@ -588,7 +619,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('日期时间选择器示例'),
@@ -619,7 +650,10 @@ class _MyHomePageState extends State<MyHomePage> {
             // 添加直接使用DatePicker的测试组件
             const SizedBox(height: 10),
             _buildSectionTitle('1.1 直接显示年月选择器'),
-            const DatePicker(
+            DatePicker(
+              initialDate: DateTime(2024, 5, 15),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
               displayMode: DatePickerDisplayMode.yearMonth,
             ),
 
@@ -664,6 +698,8 @@ class _MyHomePageState extends State<MyHomePage> {
             const SizedBox(height: 10),
             DateTimePicker(
               initialDate: DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
               showQuickButtons: true,
               displayMode: DatePickerDisplayMode.dateTime,
               onDateTimeChanged: (result) {
@@ -755,7 +791,7 @@ class _MyHomePageState extends State<MyHomePage> {
   // 构建区域标题
   Widget _buildSectionTitle(String title) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
@@ -773,12 +809,11 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _buildResultCard(String text, Color backgroundColor) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
-    
+
     // 在暗色模式下调整背景色不透明度
-    final bgColor = isDarkMode 
-        ? backgroundColor.withOpacity(0.2) 
-        : backgroundColor;
-    
+    final bgColor =
+        isDarkMode ? backgroundColor.withOpacity(0.2) : backgroundColor;
+
     return Card(
       elevation: 0,
       color: bgColor,

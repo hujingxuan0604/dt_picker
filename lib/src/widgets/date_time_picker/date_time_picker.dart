@@ -42,72 +42,92 @@ class DateTimePicker extends StatefulWidget {
 }
 
 class _DateTimePickerState extends State<DateTimePicker> {
-  late DateTime _selectedDate;
-  late TimeOfDay _selectedTime;
-  late int _selectedSecond;
+  late final ValueNotifier<DateTime> _selectedDate;
+  late final ValueNotifier<TimeOfDay> _selectedTime;
+  late final ValueNotifier<int> _selectedSecond;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = widget.initialDate ?? DateTime.now();
-    _selectedTime = TimeOfDay.fromDateTime(_selectedDate);
-    _selectedSecond = _selectedDate.second;
+    final initial = widget.initialDate ?? DateTime.now();
+    _selectedDate = ValueNotifier(initial);
+    _selectedTime = ValueNotifier(TimeOfDay.fromDateTime(initial));
+    _selectedSecond = ValueNotifier(initial.second);
+  }
+
+  @override
+  void dispose() {
+    _selectedDate.dispose();
+    _selectedTime.dispose();
+    _selectedSecond.dispose();
+    super.dispose();
   }
 
   /// 更新选择的日期
   void _updateSelectedDate(DateTime date) {
-    setState(() {
-      _selectedDate = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        _selectedTime.hour,
-        _selectedTime.minute,
-        _selectedSecond,
-      );
-    });
+    _selectedDate.value = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      _selectedTime.value.hour,
+      _selectedTime.value.minute,
+      _selectedSecond.value,
+    );
     _notifyDateTimeChanged();
   }
 
   /// 更新选择的时间
   void _updateSelectedTime(TimeOfDay time, int second) {
-    setState(() {
-      _selectedTime = time;
-      _selectedSecond = second;
-      _selectedDate = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day,
-        time.hour,
-        time.minute,
-        second,
-      );
-    });
+    _selectedTime.value = time;
+    _selectedSecond.value = second;
+    _selectedDate.value = DateTime(
+      _selectedDate.value.year,
+      _selectedDate.value.month,
+      _selectedDate.value.day,
+      time.hour,
+      time.minute,
+      second,
+    );
     _notifyDateTimeChanged();
   }
 
   /// 通知日期时间变更
   void _notifyDateTimeChanged() {
     if (widget.onDateTimeChanged != null) {
-      widget.onDateTimeChanged!(_selectedDate);
+      widget.onDateTimeChanged!(_selectedDate.value);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return DatePicker(
-      initialDate: _selectedDate,
-      firstDate: widget.firstDate,
-      lastDate: widget.lastDate,
-      displayMode: widget.displayMode,
-      showQuickButtons: widget.showQuickButtons,
-      onDateChanged: _updateSelectedDate,
-      timePickerWidget: TimePickerButton(
-        time: _selectedTime,
-        second: _selectedSecond,
-        showSeconds: widget.showSeconds,
-        onTimeChanged: _updateSelectedTime,
-      ),
+    return ValueListenableBuilder<DateTime>(
+      valueListenable: _selectedDate,
+      builder: (context, date, _) {
+        return ValueListenableBuilder<TimeOfDay>(
+          valueListenable: _selectedTime,
+          builder: (context, time, __) {
+            return ValueListenableBuilder<int>(
+              valueListenable: _selectedSecond,
+              builder: (context, second, ___) {
+                return DatePicker(
+                  initialDate: date,
+                  firstDate: widget.firstDate,
+                  lastDate: widget.lastDate,
+                  displayMode: widget.displayMode,
+                  showQuickButtons: widget.showQuickButtons,
+                  onDateChanged: _updateSelectedDate,
+                  timePickerWidget: TimePickerButton(
+                    time: time,
+                    second: second,
+                    showSeconds: widget.showSeconds,
+                    onTimeChanged: _updateSelectedTime,
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 }

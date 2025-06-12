@@ -2,6 +2,7 @@ import 'package:dt_picker/src/utils/responsive_utils.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '../../controllers/time_picker_controller.dart';
+import 'dart:async';
 
 /// 时间选择器表盘模式
 class TimePickerDial extends StatefulWidget {
@@ -17,27 +18,37 @@ class TimePickerDial extends StatefulWidget {
 }
 
 class _TimePickerDialState extends State<TimePickerDial> {
-  TimePickerMode _currentMode = TimePickerMode.hour;
+  // 优化：用 ValueNotifier 代替 State 变量
+  final ValueNotifier<TimePickerMode> _currentMode = ValueNotifier(TimePickerMode.hour);
 
   // 用于指针拖动
   bool _isDragging = false;
+  Timer? _debounceTimer; // 拖动防抖定时器
+  Offset? _lastDragPosition;
 
   @override
   void initState() {
     super.initState();
     // 如果不显示秒，则强制使用小时模式
     if (!widget.controller.showSeconds &&
-        _currentMode == TimePickerMode.second) {
-      _currentMode = TimePickerMode.hour;
+        _currentMode.value == TimePickerMode.second) {
+      _currentMode.value = TimePickerMode.hour;
     }
+  }
+
+  @override
+  void dispose() {
+    _currentMode.dispose();
+    _debounceTimer?.cancel();
+    super.dispose();
   }
 
   void _setCurrentMode(TimePickerMode mode) {
     // 如果不显示秒且尝试设置为秒模式，则默认设置为小时模式
     if (!widget.controller.showSeconds && mode == TimePickerMode.second) {
-      setState(() => _currentMode = TimePickerMode.hour);
+      _currentMode.value = TimePickerMode.hour;
     } else {
-      setState(() => _currentMode = mode);
+      _currentMode.value = mode;
     }
   }
 
@@ -65,298 +76,320 @@ class _TimePickerDialState extends State<TimePickerDial> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // 时间显示和模式切换
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildTimeSegment(
-                context: context,
-                value: widget.controller.time.hour.toString().padLeft(2, '0'),
-                isSelected: _currentMode == TimePickerMode.hour,
-                onTap: () => _setCurrentMode(TimePickerMode.hour),
-              ),
-              Text(
-                ':',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  color: theme.colorScheme.onSurface,
-                ),
-              ),
-              _buildTimeSegment(
-                context: context,
-                value: widget.controller.time.minute.toString().padLeft(2, '0'),
-                isSelected: _currentMode == TimePickerMode.minute,
-                onTap: () => _setCurrentMode(TimePickerMode.minute),
-              ),
-              if (widget.controller.showSeconds) ...[
-                Text(
-                  ':',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: theme.colorScheme.onSurface,
+          ValueListenableBuilder<TimePickerMode>(
+            valueListenable: _currentMode,
+            builder: (context, mode, _) {
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _buildTimeSegment(
+                    context: context,
+                    value: widget.controller.time.hour.toString().padLeft(2, '0'),
+                    isSelected: mode == TimePickerMode.hour,
+                    onTap: () => _setCurrentMode(TimePickerMode.hour),
                   ),
-                ),
-                _buildTimeSegment(
-                  context: context,
-                  value: widget.controller.second.toString().padLeft(2, '0'),
-                  isSelected: _currentMode == TimePickerMode.second,
-                  onTap: () => _setCurrentMode(TimePickerMode.second),
-                ),
-              ],
-            ],
+                  Text(
+                    ':',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                  _buildTimeSegment(
+                    context: context,
+                    value: widget.controller.time.minute.toString().padLeft(2, '0'),
+                    isSelected: mode == TimePickerMode.minute,
+                    onTap: () => _setCurrentMode(TimePickerMode.minute),
+                  ),
+                  if (widget.controller.showSeconds) ...[
+                    Text(
+                      ':',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    _buildTimeSegment(
+                      context: context,
+                      value: widget.controller.second.toString().padLeft(2, '0'),
+                      isSelected: mode == TimePickerMode.second,
+                      onTap: () => _setCurrentMode(TimePickerMode.second),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
           const SizedBox(height: 16),
           // 表盘
-          GestureDetector(
-            onPanStart: (details) {
-              _updatePointerPosition(
-                  details.localPosition, dialSize, outerRadius, innerRadius);
-              _isDragging = true;
-            },
-            onPanUpdate: (details) {
-              if (_isDragging) {
-                _updatePointerPosition(
-                    details.localPosition, dialSize, outerRadius, innerRadius);
-              }
-            },
-            onPanEnd: (_) {
-              _isDragging = false;
-            },
-            child: SizedBox(
-              width: dialSize,
-              height: dialSize,
-              child: Stack(
-                children: [
-                  // 表盘背景
-                  Center(
-                    child: Container(
-                      width: dialSize,
-                      height: dialSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: dialBackgroundColor,
+          ValueListenableBuilder<TimePickerMode>(
+            valueListenable: _currentMode,
+            builder: (context, mode, _) {
+              return GestureDetector(
+                onPanStart: (details) {
+                  _handleDrag(details.localPosition, dialSize, outerRadius, innerRadius, mode);
+                  _isDragging = true;
+                },
+                onPanUpdate: (details) {
+                  if (_isDragging) {
+                    _handleDrag(details.localPosition, dialSize, outerRadius, innerRadius, mode);
+                  }
+                },
+                onPanEnd: (_) {
+                  _isDragging = false;
+                  // 拖动结束时再处理一次，确保最终位置准确
+                  if (_lastDragPosition != null) {
+                    _updatePointerPosition(_lastDragPosition!, dialSize, outerRadius, innerRadius, mode);
+                  }
+                  _debounceTimer?.cancel();
+                },
+                child: SizedBox(
+                  width: dialSize,
+                  height: dialSize,
+                  child: Stack(
+                    children: [
+                      // 表盘背景
+                      Center(
+                        child: Container(
+                          width: dialSize,
+                          height: dialSize,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: dialBackgroundColor,
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                  // 根据当前模式显示不同的选择器
-                  if (_currentMode == TimePickerMode.hour) ...[
-                    // 外圆环（1-12小时）
-                    ...List.generate(12, (index) {
-                      final hour = index + 1;
-                      // 修改角度计算，使数字顺时针排列
-                      final angle = (hour * 30 - 90) * (math.pi / 180);
-                      final x = outerRadius * math.cos(angle);
-                      final y = outerRadius * math.sin(angle);
+                      // 根据当前模式显示不同的选择器
+                      if (mode == TimePickerMode.hour) ...[
+                        // 外圆环（1-12小时）
+                        ...List.generate(12, (index) {
+                          final hour = index + 1;
+                          // 修改角度计算，使数字顺时针排列
+                          final angle = (hour * 30 - 90) * (math.pi / 180);
+                          final x = outerRadius * math.cos(angle);
+                          final y = outerRadius * math.sin(angle);
 
-                      return Positioned(
-                        left: dialSize / 2 + x - 10,
-                        top: dialSize / 2 + y - 10,
-                        child: GestureDetector(
-                          onTap: () {
-                            widget.controller.updateTime(TimeOfDay(
-                              hour: hour,
-                              minute: widget.controller.time.minute,
-                            ));
-                          },
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: widget.controller.time.hour == hour
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                            ),
-                            child: Text(
-                              hour.toString(),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: widget.controller.time.hour == hour
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSurface,
-                                fontWeight: widget.controller.time.hour == hour
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    // 内圆环（13-24小时）
-                    ...List.generate(12, (index) {
-                      final hour = index + 13;
-                      // 修改角度计算，使数字顺时针排列并与外环对应
-                      final angle = ((index + 1) * 30 - 90) * (math.pi / 180);
-                      final x = innerRadius * math.cos(angle);
-                      final y = innerRadius * math.sin(angle);
-
-                      return Positioned(
-                        left: dialSize / 2 + x - 10,
-                        top: dialSize / 2 + y - 10,
-                        child: GestureDetector(
-                          onTap: () {
-                            widget.controller.updateTime(TimeOfDay(
-                              hour: hour == 24 ? 0 : hour,
-                              minute: widget.controller.time.minute,
-                            ));
-                          },
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: hour == widget.controller.time.hour ||
-                                      (hour == 24 &&
-                                          widget.controller.time.hour == 0)
-                                  ? theme.colorScheme.primary
-                                  : Colors.transparent,
-                            ),
-                            child: Text(
-                              hour == 24 ? '0' : hour.toString(),
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: hour == widget.controller.time.hour ||
-                                        (hour == 24 &&
-                                            widget.controller.time.hour == 0)
-                                    ? theme.colorScheme.onPrimary
-                                    : theme.colorScheme.onSurface,
-                                fontWeight: hour ==
-                                            widget.controller.time.hour ||
-                                        (hour == 24 &&
-                                            widget.controller.time.hour == 0)
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                    // 绘制小时指针
-                    _buildHourHand(dialSize, theme, outerRadius, innerRadius),
-                  ] else if (_currentMode == TimePickerMode.minute) ...[
-                    // 分钟选择（0-55，每5分钟一个刻度）
-                    ...List.generate(12, (index) {
-                      final minute = index * 5;
-                      // 修改角度计算，使数字顺时针排列
-                      final angle = (minute * 6 - 90) * (math.pi / 180);
-                      final x = outerRadius * math.cos(angle);
-                      final y = outerRadius * math.sin(angle);
-
-                      return Positioned(
-                        left: dialSize / 2 + x - 10,
-                        top: dialSize / 2 + y - 10,
-                        child: GestureDetector(
-                          onTap: () {
-                            widget.controller.updateTime(TimeOfDay(
-                              hour: widget.controller.time.hour,
-                              minute: minute,
-                            ));
-                          },
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: minute == widget.controller.time.minute
-                                  ? theme.colorScheme.secondary
-                                  : Colors.transparent,
-                            ),
-                            child: Text(
-                              minute.toString().padLeft(2, '0'),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: minute == widget.controller.time.minute
-                                    ? theme.colorScheme.onSecondary
-                                    : theme.colorScheme.onSurface,
-                                fontWeight:
-                                    minute == widget.controller.time.minute
+                          return Positioned(
+                            left: dialSize / 2 + x - 10,
+                            top: dialSize / 2 + y - 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                widget.controller.updateTime(TimeOfDay(
+                                  hour: hour,
+                                  minute: widget.controller.time.minute,
+                                ));
+                              },
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: widget.controller.time.hour == hour
+                                      ? theme.colorScheme.primary
+                                      : Colors.transparent,
+                                ),
+                                child: Text(
+                                  hour.toString(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: widget.controller.time.hour == hour
+                                        ? theme.colorScheme.onPrimary
+                                        : theme.colorScheme.onSurface,
+                                    fontWeight: widget.controller.time.hour == hour
                                         ? FontWeight.bold
                                         : FontWeight.normal,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      );
-                    }),
-                    // 绘制分钟指针
-                    _buildMinuteHand(dialSize, theme, outerRadius),
-                  ] else if (widget.controller.showSeconds) ...[
-                    // 秒数选择（0-55，每5秒一个刻度）
-                    ...List.generate(12, (index) {
-                      final second = index * 5;
-                      // 修改角度计算，使数字顺时针排列
-                      final angle = (second * 6 - 90) * (math.pi / 180);
-                      final x = outerRadius * math.cos(angle);
-                      final y = outerRadius * math.sin(angle);
+                          );
+                        }),
+                        // 内圆环（13-24小时）
+                        ...List.generate(12, (index) {
+                          final hour = index + 13;
+                          // 修改角度计算，使数字顺时针排列并与外环对应
+                          final angle = ((index + 1) * 30 - 90) * (math.pi / 180);
+                          final x = innerRadius * math.cos(angle);
+                          final y = innerRadius * math.sin(angle);
 
-                      return Positioned(
-                        left: dialSize / 2 + x - 10,
-                        top: dialSize / 2 + y - 10,
-                        child: GestureDetector(
-                          onTap: () {
-                            widget.controller.updateSecond(second);
-                          },
-                          child: Container(
-                            width: 20,
-                            height: 20,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: second == widget.controller.second
-                                  ? theme.colorScheme.error
-                                  : Colors.transparent,
-                            ),
-                            child: Text(
-                              second.toString().padLeft(2, '0'),
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                color: second == widget.controller.second
-                                    ? theme.colorScheme.onError
-                                    : theme.colorScheme.onSurface,
-                                fontWeight: second == widget.controller.second
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                          return Positioned(
+                            left: dialSize / 2 + x - 10,
+                            top: dialSize / 2 + y - 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                widget.controller.updateTime(TimeOfDay(
+                                  hour: hour == 24 ? 0 : hour,
+                                  minute: widget.controller.time.minute,
+                                ));
+                              },
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: hour == widget.controller.time.hour ||
+                                          (hour == 24 &&
+                                              widget.controller.time.hour == 0)
+                                      ? theme.colorScheme.primary
+                                      : Colors.transparent,
+                                ),
+                                child: Text(
+                                  hour == 24 ? '0' : hour.toString(),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: hour == widget.controller.time.hour ||
+                                            (hour == 24 &&
+                                                widget.controller.time.hour == 0)
+                                        ? theme.colorScheme.onPrimary
+                                        : theme.colorScheme.onSurface,
+                                    fontWeight: hour ==
+                                                widget.controller.time.hour ||
+                                            (hour == 24 &&
+                                                widget.controller.time.hour == 0)
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
                               ),
                             ),
+                          );
+                        }),
+                        // 绘制小时指针
+                        _buildHourHand(dialSize, theme, outerRadius, innerRadius),
+                      ] else if (mode == TimePickerMode.minute) ...[
+                        // 分钟选择（0-55，每5分钟一个刻度）
+                        ...List.generate(12, (index) {
+                          final minute = index * 5;
+                          // 修改角度计算，使数字顺时针排列
+                          final angle = (minute * 6 - 90) * (math.pi / 180);
+                          final x = outerRadius * math.cos(angle);
+                          final y = outerRadius * math.sin(angle);
+
+                          return Positioned(
+                            left: dialSize / 2 + x - 10,
+                            top: dialSize / 2 + y - 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                widget.controller.updateTime(TimeOfDay(
+                                  hour: widget.controller.time.hour,
+                                  minute: minute,
+                                ));
+                              },
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: minute == widget.controller.time.minute
+                                      ? theme.colorScheme.secondary
+                                      : Colors.transparent,
+                                ),
+                                child: Text(
+                                  minute.toString().padLeft(2, '0'),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: minute == widget.controller.time.minute
+                                        ? theme.colorScheme.onSecondary
+                                        : theme.colorScheme.onSurface,
+                                    fontWeight:
+                                        minute == widget.controller.time.minute
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        // 绘制分钟指针
+                        _buildMinuteHand(dialSize, theme, outerRadius),
+                      ] else if (widget.controller.showSeconds) ...[
+                        // 秒数选择（0-55，每5秒一个刻度）
+                        ...List.generate(12, (index) {
+                          final second = index * 5;
+                          // 修改角度计算，使数字顺时针排列
+                          final angle = (second * 6 - 90) * (math.pi / 180);
+                          final x = outerRadius * math.cos(angle);
+                          final y = outerRadius * math.sin(angle);
+
+                          return Positioned(
+                            left: dialSize / 2 + x - 10,
+                            top: dialSize / 2 + y - 10,
+                            child: GestureDetector(
+                              onTap: () {
+                                widget.controller.updateSecond(second);
+                              },
+                              child: Container(
+                                width: 20,
+                                height: 20,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: second == widget.controller.second
+                                      ? theme.colorScheme.error
+                                      : Colors.transparent,
+                                ),
+                                child: Text(
+                                  second.toString().padLeft(2, '0'),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: second == widget.controller.second
+                                        ? theme.colorScheme.onError
+                                        : theme.colorScheme.onSurface,
+                                    fontWeight: second == widget.controller.second
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          );
+                        }),
+                        // 绘制秒针
+                        _buildSecondHand(dialSize, theme, outerRadius),
+                      ],
+                      // 中心点
+                      Center(
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: theme.colorScheme.primary,
                           ),
                         ),
-                      );
-                    }),
-                    // 绘制秒针
-                    _buildSecondHand(dialSize, theme, outerRadius),
-                  ],
-                  // 中心点
-                  Center(
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: theme.colorScheme.primary,
                       ),
-                    ),
+                    ],
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
+  // 拖动防抖处理
+  void _handleDrag(Offset position, double dialSize, double outerRadius, double innerRadius, TimePickerMode mode) {
+    _lastDragPosition = position;
+    if (_debounceTimer?.isActive ?? false) return;
+    _debounceTimer = Timer(const Duration(milliseconds: 16), () {
+      if (_lastDragPosition != null) {
+        _updatePointerPosition(_lastDragPosition!, dialSize, outerRadius, innerRadius, mode);
+      }
+    });
+  }
+
   // 更新指针位置并选择对应的时间值
   void _updatePointerPosition(Offset position, double dialSize,
-      double outerRadius, double innerRadius) {
+      double outerRadius, double innerRadius, TimePickerMode mode) {
     final center = Offset(dialSize / 2, dialSize / 2);
     final relativePos = position - center;
-
-    setState(() {});
 
     // 计算角度（0-360度）
     final angle =
         (math.atan2(relativePos.dy, relativePos.dx) * 180 / math.pi + 90) % 360;
 
     // 根据当前模式和角度更新时间
-    if (_currentMode == TimePickerMode.hour) {
+    if (mode == TimePickerMode.hour) {
       // 检查是外环还是内环（基于距离）
       final distance = relativePos.distance;
       final thresholdRadius = (outerRadius + innerRadius) / 2;
@@ -377,14 +410,14 @@ class _TimePickerDialState extends State<TimePickerDial> {
           minute: widget.controller.time.minute,
         ));
       }
-    } else if (_currentMode == TimePickerMode.minute) {
+    } else if (mode == TimePickerMode.minute) {
       final minute = ((angle / 6).round()) % 60;
       widget.controller.updateTime(TimeOfDay(
         hour: widget.controller.time.hour,
         minute: minute,
       ));
     } else if (widget.controller.showSeconds &&
-        _currentMode == TimePickerMode.second) {
+        mode == TimePickerMode.second) {
       final second = ((angle / 6).round()) % 60;
       widget.controller.updateSecond(second);
     }
@@ -503,19 +536,19 @@ class HandPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    // 直接使用提供的角度，不需要额外的转换
-    // angle已经是从12点钟方向开始的弧度值
     final x = center.dx + length * math.cos(angle);
     final y = center.dy + length * math.sin(angle);
-
     canvas.drawLine(center, Offset(x, y), paint);
   }
 
   @override
   bool shouldRepaint(covariant HandPainter oldDelegate) {
+    // 只在 angle、length、color、strokeWidth、center 变化时重绘
     return oldDelegate.angle != angle ||
         oldDelegate.length != length ||
-        oldDelegate.color != color;
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth ||
+        oldDelegate.center != center;
   }
 }
 
@@ -544,35 +577,26 @@ class ClockHandPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
 
     final center = Offset(size.width / 2, size.height / 2);
-
-    // 计算指针角度（弧度）
-    // 12点钟方向为0值，顺时针旋转
-    // 例如，对于小时，0表示12点方向，3表示3点方向，等等
     double angle;
     if (value == 0) {
-      // 指向12点方向
       angle = -math.pi / 2;
     } else {
-      // 根据值计算角度
-      // 例如，小时：每小时30度(2π/12)；分钟和秒：每单位6度(2π/60)
       final unitAngle = 2 * math.pi / valueCount;
       angle = value * unitAngle - math.pi / 2;
     }
-
-    // 计算指针端点位置
     final x = center.dx + length * math.cos(angle);
     final y = center.dy + length * math.sin(angle);
-
-    // 绘制指针
     canvas.drawLine(center, Offset(x, y), paint);
   }
 
   @override
   bool shouldRepaint(covariant ClockHandPainter oldDelegate) {
+    // 只在 value、valueCount、length、color、strokeWidth 变化时重绘
     return oldDelegate.value != value ||
         oldDelegate.valueCount != valueCount ||
         oldDelegate.length != length ||
-        oldDelegate.color != color;
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }
 

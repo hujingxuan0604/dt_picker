@@ -50,11 +50,12 @@ class DatePicker extends StatefulWidget {
 class _DatePickerState extends State<DatePicker> {
   /// 日期选择器控制器
   late DatePickerController _controller;
+  // 优化：用 ValueNotifier 代替 setState
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier(0);
 
   @override
   void initState() {
     super.initState();
-
     // 初始化控制器
     _controller = DatePickerController(
       initialDate: widget.initialDate,
@@ -67,24 +68,15 @@ class _DatePickerState extends State<DatePicker> {
   @override
   void didUpdateWidget(DatePicker oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // 如果显示模式变更，需要更新控制器
     if (oldWidget.displayMode != widget.displayMode) {
-      // 创建新控制器
       final newController = DatePickerController(
         initialDate: _controller.selectedDate,
         displayMode: widget.displayMode,
       );
-
-      // 保存当前视图数据
       final currentYear = _controller.currentYear;
       final currentMonth = _controller.currentMonth;
-
-      // 清理旧控制器
       _controller.removeListener(_onControllerChanged);
       _controller.dispose();
-
-      // 设置新控制器
       _controller = newController;
       _controller.updateMonth(currentYear, currentMonth);
       _controller.addListener(_onControllerChanged);
@@ -93,16 +85,16 @@ class _DatePickerState extends State<DatePicker> {
 
   @override
   void dispose() {
-    // 移除监听并释放控制器
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
+    _refreshNotifier.dispose();
     super.dispose();
   }
 
   /// 控制器变更回调
   void _onControllerChanged() {
-    // 触发UI重建以更新头部显示
-    setState(() {});
+    // 只刷新局部
+    _refreshNotifier.value++;
     if (widget.onDateChanged != null) {
       widget.onDateChanged!(_controller.selectedDate);
     }
@@ -111,7 +103,6 @@ class _DatePickerState extends State<DatePicker> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
     return Card(
       elevation: 0,
       color: theme.colorScheme.surface,
@@ -120,33 +111,33 @@ class _DatePickerState extends State<DatePicker> {
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch, // 添加此行以拉伸子组件
-          children: [
-            // 显示当前年月和导航按钮
-            _buildHeader(context),
-            const SizedBox(height: 12),
-
-            // 日历组件 - 直接使用，让它自己处理其内部的AnimatedBuilder
-            DatePickerCalendar(
-              controller: _controller,
-              firstDate: widget.firstDate,
-              lastDate: widget.lastDate,
-              onDateChanged: (date) {
-                if (widget.onDateChanged != null) {
-                  widget.onDateChanged!(date);
-                }
-              },
-            ),
-
-            // 只有在日视图模式下才显示快捷按钮和时间选择器
-            if (widget.showQuickButtons &&
-                _controller.viewMode == DatePickerViewMode.day) ...[
-              const SizedBox(height: 12),
-              _buildQuickButtons(context),
-            ],
-          ],
+        child: ValueListenableBuilder<int>(
+          valueListenable: _refreshNotifier,
+          builder: (context, _, __) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _buildHeader(context),
+                const SizedBox(height: 12),
+                DatePickerCalendar(
+                  controller: _controller,
+                  firstDate: widget.firstDate,
+                  lastDate: widget.lastDate,
+                  onDateChanged: (date) {
+                    if (widget.onDateChanged != null) {
+                      widget.onDateChanged!(date);
+                    }
+                  },
+                ),
+                if (widget.showQuickButtons &&
+                    _controller.viewMode == DatePickerViewMode.day) ...[
+                  const SizedBox(height: 12),
+                  _buildQuickButtons(context),
+                ],
+              ],
+            );
+          },
         ),
       ),
     );

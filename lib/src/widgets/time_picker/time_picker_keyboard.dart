@@ -13,17 +13,17 @@ class TimePickerKeyboard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    //final theme = Theme.of(context);
     
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.transparent,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _buildTimeInput(
+          _buildReactiveTimeInput(
             context: context,
             controller: controller.hourController,
             hint: '00',
@@ -31,7 +31,7 @@ class TimePickerKeyboard extends StatelessWidget {
             onChanged: (_) => controller.updateFromKeyboard(),
           ),
           _buildSeparator(context),
-          _buildTimeInput(
+          _buildReactiveTimeInput(
             context: context,
             controller: controller.minuteController,
             hint: '00',
@@ -40,7 +40,7 @@ class TimePickerKeyboard extends StatelessWidget {
           ),
           if (controller.showSeconds) ...[
             _buildSeparator(context),
-            _buildTimeInput(
+            _buildReactiveTimeInput(
               context: context,
               controller: controller.secondController,
               hint: '00',
@@ -67,7 +67,7 @@ class TimePickerKeyboard extends StatelessWidget {
     );
   }
 
-  Widget _buildTimeInput({
+  Widget _buildReactiveTimeInput({
     required BuildContext context,
     required TextEditingController controller,
     required String hint,
@@ -75,48 +75,52 @@ class TimePickerKeyboard extends StatelessWidget {
     required ValueChanged<String> onChanged,
   }) {
     final theme = Theme.of(context);
-    
-    return SizedBox(
-      width: ResponsiveUtils.getTimeInputWidth(context),
-      child: TextField(
-        controller: controller,
-        maxLength: maxLength,
-        keyboardType: TextInputType.number,
-        textAlign: TextAlign.center,
-        style: theme.textTheme.headlineSmall?.copyWith(
-          color: theme.colorScheme.onSurface,
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          counterText: '',
-          hintText: hint,
-          hintStyle: theme.textTheme.headlineSmall?.copyWith(
-            color: theme.colorScheme.onSurface.withOpacity(0.3),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: theme.colorScheme.outline.withOpacity(0.3),
-              width: 1.5,
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller,
+      builder: (context, value, _) {
+        return SizedBox(
+          width: ResponsiveUtils.getTimeInputWidth(context),
+          child: TextField(
+            controller: controller,
+            maxLength: maxLength,
+            keyboardType: TextInputType.number,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.headlineSmall?.copyWith(
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
             ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: theme.colorScheme.primary,
-              width: 2,
+            decoration: InputDecoration(
+              counterText: '',
+              hintText: hint,
+              hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.3),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.outline.withOpacity(0.3),
+                  width: 1.5,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 2,
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                vertical: 12,
+                horizontal: 4,
+              ),
+              isDense: true,
+              filled: true,
+              fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.1),
             ),
+            onChanged: onChanged,
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            vertical: 12,
-            horizontal: 4,
-          ),
-          isDense: true,
-          filled: true,
-          fillColor: theme.colorScheme.surfaceVariant.withOpacity(0.1),
-        ),
-        onChanged: onChanged,
-      ),
+        );
+      },
     );
   }
 }

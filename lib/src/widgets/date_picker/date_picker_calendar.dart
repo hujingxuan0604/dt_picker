@@ -46,38 +46,52 @@ class DatePickerCalendar extends StatefulWidget {
 }
 
 class _DatePickerCalendarState extends State<DatePickerCalendar> {
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier(0);
+
   @override
   void initState() {
     super.initState();
-    // 添加控制器监听，当控制器状态变化时重新构建界面
-    widget.controller.addListener(_onControllerChanged);
+    // 只监听关心的类型
+    widget.controller.addListenerForType(DatePickerChangedType.selectedDate, _onControllerChanged);
+    widget.controller.addListenerForType(DatePickerChangedType.month, _onControllerChanged);
+    widget.controller.addListenerForType(DatePickerChangedType.viewMode, _onControllerChanged);
+    widget.controller.addListenerForType(DatePickerChangedType.year, _onControllerChanged);
   }
 
   @override
   void dispose() {
-    // 移除监听
-    widget.controller.removeListener(_onControllerChanged);
+    widget.controller.removeListenerForType(DatePickerChangedType.selectedDate, _onControllerChanged);
+    widget.controller.removeListenerForType(DatePickerChangedType.month, _onControllerChanged);
+    widget.controller.removeListenerForType(DatePickerChangedType.viewMode, _onControllerChanged);
+    widget.controller.removeListenerForType(DatePickerChangedType.year, _onControllerChanged);
+    _refreshNotifier.dispose();
     super.dispose();
   }
 
-  // 控制器状态变化处理函数
   void _onControllerChanged() {
-    setState(() {
-      // 状态变化，触发重新构建
-    });
+    _refreshNotifier.value++;
   }
 
   @override
   Widget build(BuildContext context) {
-    // 限制日历组件在大屏幕上的最大宽度
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
           maxWidth: ResponsiveUtils.isDesktop(context) ? 420 : double.infinity,
         ),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _buildCalendarContent(context),
+        child: ValueListenableBuilder<int>(
+          valueListenable: _refreshNotifier,
+          builder: (context, _, __) {
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.linear,
+              switchOutCurve: Curves.linear,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(opacity: animation, child: child);
+              },
+              child: _buildCalendarContent(context),
+            );
+          },
         ),
       ),
     );
@@ -159,6 +173,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          cacheExtent: 500,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 7,
             childAspectRatio: 1.0,
@@ -204,6 +219,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      cacheExtent: 300,
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 3,
         childAspectRatio: childAspectRatio,
@@ -301,6 +317,7 @@ class _DatePickerCalendarState extends State<DatePickerCalendar> {
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
+          cacheExtent: 300,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             childAspectRatio: childAspectRatio,

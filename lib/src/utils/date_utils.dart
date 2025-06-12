@@ -1,5 +1,3 @@
-import 'package:jiffy/jiffy.dart';
-
 /// 日期工具类
 class DateUtil {
   /// 获取月份中的所有日期
@@ -67,27 +65,30 @@ class DateUtil {
 
   /// 判断两个日期是否是同一天
   static bool isSameDay(DateTime a, DateTime b) {
-    return Jiffy.parseFromDateTime(a).isSame(Jiffy.parseFromDateTime(b), unit: Unit.day);
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 
   /// 判断是否是今天
   static bool isToday(DateTime date) {
-    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now(), unit: Unit.day);
+    final now = DateTime.now();
+    return isSameDay(date, now);
   }
 
   /// 判断日期是否为昨天
   static bool isYesterday(DateTime date) {
-    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now().subtract(days: 1), unit: Unit.day);
+    final yesterday = DateTime.now().subtract(const Duration(days: 1));
+    return isSameDay(date, yesterday);
   }
 
   /// 判断日期是否为前天
   static bool isDayBeforeYesterday(DateTime date) {
-    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now().subtract(days: 2), unit: Unit.day);
+    final dayBeforeYesterday = DateTime.now().subtract(const Duration(days: 2));
+    return isSameDay(date, dayBeforeYesterday);
   }
 
   /// 判断是否是本月
   static bool isSameMonth(DateTime a, DateTime b) {
-    return Jiffy.parseFromDateTime(a).isSame(Jiffy.parseFromDateTime(b), unit: Unit.month);
+    return a.year == b.year && a.month == b.month;
   }
 
   /// 格式化日期字符串
@@ -98,18 +99,20 @@ class DateUtil {
     bool showMonth = true,
     bool showDay = true,
   }) {
-    String pattern = '';
+    final parts = <String>[];
+
     if (showYear) {
-      pattern += 'yyyy';
-      if (showMonth) pattern += separator;
+      parts.add(date.year.toString());
     }
+
     if (showMonth) {
-      pattern += 'MM';
-      if (showDay) pattern += separator;
+      parts.add(date.month.toString().padLeft(2, '0'));
     }
+
     if (showDay) {
-      pattern += 'dd';
+      parts.add(date.day.toString().padLeft(2, '0'));
     }
-    return Jiffy.parseFromDateTime(date).format(pattern: pattern);
+
+    return parts.join(separator);
   }
 }

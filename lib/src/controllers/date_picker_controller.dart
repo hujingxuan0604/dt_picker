@@ -84,6 +84,15 @@ enum DatePickerViewMode {
   year,
 }
 
+/// 日期选择器改变类型
+enum DatePickerChangedType {
+  selectedDate,
+  month,
+  viewMode,
+  year,
+  all,
+}
+
 /// 日期选择器控制器
 class DatePickerController extends ChangeNotifier {
   /// 当前选中的日期
@@ -122,6 +131,9 @@ class DatePickerController extends ChangeNotifier {
   /// 获取当前视图模式
   DatePickerViewMode get viewMode => _viewMode;
 
+  DatePickerChangedType lastChangedType = DatePickerChangedType.all;
+  final Map<DatePickerChangedType, List<VoidCallback>> _typedListeners = {};
+
   /// 构造函数
   DatePickerController({
     DateTime? initialDate,
@@ -151,21 +163,21 @@ class DatePickerController extends ChangeNotifier {
   /// 更新选中的日期
   void updateSelectedDate(DateTime date) {
     _selectedDate = date;
-    notifyListeners();
+    notifyListenersWithType(DatePickerChangedType.selectedDate);
   }
 
   /// 更新年月
   void updateMonth(int year, int month) {
     _currentYear = year;
     _currentMonth = month;
-    notifyListeners();
+    notifyListenersWithType(DatePickerChangedType.month);
   }
 
   /// 切换到日期视图模式
   void switchToDayMode() {
     if (showDay) {
       _viewMode = DatePickerViewMode.day;
-      notifyListeners();
+      notifyListenersWithType(DatePickerChangedType.viewMode);
     }
   }
 
@@ -173,7 +185,7 @@ class DatePickerController extends ChangeNotifier {
   void switchToMonthMode() {
     if (showMonth) {
       _viewMode = DatePickerViewMode.month;
-      notifyListeners();
+      notifyListenersWithType(DatePickerChangedType.viewMode);
     }
   }
 
@@ -181,7 +193,7 @@ class DatePickerController extends ChangeNotifier {
   void switchToYearMode() {
     if (showYear) {
       _viewMode = DatePickerViewMode.year;
-      notifyListeners();
+      notifyListenersWithType(DatePickerChangedType.viewMode);
     }
   }
 
@@ -193,7 +205,7 @@ class DatePickerController extends ChangeNotifier {
     } else {
       _currentMonth++;
     }
-    notifyListeners();
+    notifyListenersWithType(DatePickerChangedType.month);
   }
 
   /// 上一个月
@@ -204,30 +216,43 @@ class DatePickerController extends ChangeNotifier {
     } else {
       _currentMonth--;
     }
-    notifyListeners();
+    notifyListenersWithType(DatePickerChangedType.month);
   }
 
   /// 下一年
   void nextYear() {
     _currentYear++;
-    // 确保在年份视图模式下正确更新
-    if (_viewMode == DatePickerViewMode.year) {
-    // 强制触发更新
-    notifyListeners();
-    } else {
-    notifyListeners();
-    }
+    notifyListenersWithType(DatePickerChangedType.year);
   }
 
   /// 上一年
   void previousYear() {
     _currentYear--;
-    // 确保在年份视图模式下正确更新
-    if (_viewMode == DatePickerViewMode.year) {
-    // 强制触发更新
+    notifyListenersWithType(DatePickerChangedType.year);
+  }
+
+  void addListenerForType(DatePickerChangedType type, VoidCallback listener) {
+    _typedListeners.putIfAbsent(type, () => []).add(listener);
+  }
+
+  void removeListenerForType(DatePickerChangedType type, VoidCallback listener) {
+    _typedListeners[type]?.remove(listener);
+  }
+
+  void notifyListenersWithType(DatePickerChangedType type) {
+    lastChangedType = type;
     notifyListeners();
-    } else {
-    notifyListeners();
+    // 只通知关心该类型的监听者
+    if (_typedListeners[type] != null) {
+      for (final listener in List<VoidCallback>.from(_typedListeners[type]!)) {
+        listener();
+      }
+    }
+    // 通知 all 类型监听者
+    if (type != DatePickerChangedType.all && _typedListeners[DatePickerChangedType.all] != null) {
+      for (final listener in List<VoidCallback>.from(_typedListeners[DatePickerChangedType.all]!)) {
+        listener();
+      }
     }
   }
 }

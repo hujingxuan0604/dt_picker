@@ -26,6 +26,7 @@ class TimePicker extends StatefulWidget {
 
 class _TimePickerState extends State<TimePicker> {
   late final TimePickerController _controller;
+  final ValueNotifier<int> _refreshNotifier = ValueNotifier(0);
 
   @override
   void initState() {
@@ -34,12 +35,15 @@ class _TimePickerState extends State<TimePicker> {
     _controller.initialize(widget.initialTime, widget.initialSecond);
     _controller.showSeconds = widget.showSeconds;
     _controller.addListener(_onTimeChanged);
+    _controller.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _controller.removeListener(_onTimeChanged);
+    _controller.removeListener(_onControllerChanged);
     _controller.dispose();
+    _refreshNotifier.dispose();
     super.dispose();
   }
 
@@ -47,11 +51,15 @@ class _TimePickerState extends State<TimePicker> {
     widget.onTimeChanged(_controller.time, _controller.second);
   }
 
+  void _onControllerChanged() {
+    _refreshNotifier.value++;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _controller,
-      builder: (context, _) {
+    return ValueListenableBuilder<int>(
+      valueListenable: _refreshNotifier,
+      builder: (context, _, __) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: const BoxDecoration(

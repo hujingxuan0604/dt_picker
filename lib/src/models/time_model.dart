@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jiffy/jiffy.dart';
 
 /// 时间选择模式
 enum TimePickerMode {
@@ -43,9 +44,8 @@ class TimeWithSeconds {
 
   /// 格式化时间字符串
   String format({bool showSeconds = true}) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-    final secondStr = second.toString().padLeft(2, '0');
-    return showSeconds ? '$hour:$minute:$secondStr' : '$hour:$minute';
+    final dt = toDateTime();
+    String pattern = showSeconds ? 'HH:mm:ss' : 'HH:mm';
+    return Jiffy.parseFromDateTime(dt).format(pattern: pattern);
   }
 } 

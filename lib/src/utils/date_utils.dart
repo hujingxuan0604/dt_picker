@@ -1,3 +1,5 @@
+import 'package:jiffy/jiffy.dart';
+
 /// 日期工具类
 class DateUtil {
   /// 获取月份中的所有日期
@@ -65,30 +67,27 @@ class DateUtil {
 
   /// 判断两个日期是否是同一天
   static bool isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
+    return Jiffy.parseFromDateTime(a).isSame(Jiffy.parseFromDateTime(b), unit: Unit.day);
   }
 
   /// 判断是否是今天
   static bool isToday(DateTime date) {
-    final now = DateTime.now();
-    return isSameDay(date, now);
+    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now(), unit: Unit.day);
   }
 
   /// 判断日期是否为昨天
   static bool isYesterday(DateTime date) {
-    final yesterday = DateTime.now().subtract(const Duration(days: 1));
-    return isSameDay(date, yesterday);
+    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now().subtract(days: 1), unit: Unit.day);
   }
 
   /// 判断日期是否为前天
   static bool isDayBeforeYesterday(DateTime date) {
-    final dayBeforeYesterday = DateTime.now().subtract(const Duration(days: 2));
-    return isSameDay(date, dayBeforeYesterday);
+    return Jiffy.parseFromDateTime(date).isSame(Jiffy.now().subtract(days: 2), unit: Unit.day);
   }
 
   /// 判断是否是本月
   static bool isSameMonth(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month;
+    return Jiffy.parseFromDateTime(a).isSame(Jiffy.parseFromDateTime(b), unit: Unit.month);
   }
 
   /// 格式化日期字符串
@@ -99,20 +98,18 @@ class DateUtil {
     bool showMonth = true,
     bool showDay = true,
   }) {
-    final parts = <String>[];
-
+    String pattern = '';
     if (showYear) {
-      parts.add(date.year.toString());
+      pattern += 'yyyy';
+      if (showMonth) pattern += separator;
     }
-
     if (showMonth) {
-      parts.add(date.month.toString().padLeft(2, '0'));
+      pattern += 'MM';
+      if (showDay) pattern += separator;
     }
-
     if (showDay) {
-      parts.add(date.day.toString().padLeft(2, '0'));
+      pattern += 'dd';
     }
-
-    return parts.join(separator);
+    return Jiffy.parseFromDateTime(date).format(pattern: pattern);
   }
 }

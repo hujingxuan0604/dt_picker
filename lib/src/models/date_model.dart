@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../controllers/date_picker_controller.dart';
+import 'package:jiffy/jiffy.dart';
 
 /// 日期选择结果类
 class DateTimeResult {
@@ -40,37 +41,23 @@ class DateTimeResult {
     String dateTimeSeparator = ' ',
   }) {
     String result = '';
-    
     final bool effectiveShowDate = showDate ?? true;
     final bool effectiveShowSeconds = showSeconds ?? (second != null);
-    
     if (effectiveShowDate) {
-      final year = date.year.toString();
-      
-      // 根据显示模式决定输出哪些日期部分
+      String pattern = '';
       if (dateDisplayMode.showYear) {
-        result += year;
-        
-        if (dateDisplayMode.showMonth) {
-          result += dateSeparator;
-        }
+        pattern += 'yyyy';
+        if (dateDisplayMode.showMonth) pattern += dateSeparator;
       }
-      
       if (dateDisplayMode.showMonth) {
-        final month = date.month.toString().padLeft(2, '0');
-        result += month;
-        
-        if (dateDisplayMode.showDay) {
-          result += dateSeparator;
-        }
+        pattern += 'MM';
+        if (dateDisplayMode.showDay) pattern += dateSeparator;
       }
-      
       if (dateDisplayMode.showDay) {
-        final day = date.day.toString().padLeft(2, '0');
-        result += day;
+        pattern += 'dd';
       }
+      result += Jiffy.parseFromDateTime(date).format(pattern: pattern);
     }
-    
     if (showTime ?? true && time != null) {
       if (effectiveShowDate && result.isNotEmpty) {
         result += dateTimeSeparator;
@@ -78,13 +65,11 @@ class DateTimeResult {
       final hour = time!.hour.toString().padLeft(2, '0');
       final minute = time!.minute.toString().padLeft(2, '0');
       result += '$hour:$minute';
-      
       if (effectiveShowSeconds && second != null) {
         final secondStr = second.toString().padLeft(2, '0');
         result += ':$secondStr';
       }
     }
-    
     return result;
   }
 } 

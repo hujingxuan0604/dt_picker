@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jiffy/jiffy.dart';
 
 /// 时间工具类
 class TimeUtils {
@@ -9,15 +10,10 @@ class TimeUtils {
     bool showSeconds = false,
     String separator = ':',
   }) {
-    final hour = time.hour.toString().padLeft(2, '0');
-    final minute = time.minute.toString().padLeft(2, '0');
-
-    if (showSeconds && second != null) {
-      final secondStr = second.toString().padLeft(2, '0');
-      return '$hour$separator$minute$separator$secondStr';
-    }
-
-    return '$hour$separator$minute';
+    final now = DateTime.now();
+    final dt = DateTime(now.year, now.month, now.day, time.hour, time.minute, second ?? 0);
+    String pattern = showSeconds ? 'HH${separator}mm${separator}ss' : 'HH${separator}mm';
+    return Jiffy.parseFromDateTime(dt).format(pattern: pattern);
   }
 
   /// 将TimeOfDay转换为分钟数（自午夜起）
@@ -35,7 +31,10 @@ class TimeUtils {
 
   /// 计算两个时间之间的分钟差
   static int minutesDifference(TimeOfDay start, TimeOfDay end) {
-    return timeOfDayToMinutes(end) - timeOfDayToMinutes(start);
+    final now = DateTime.now();
+    final startDt = DateTime(now.year, now.month, now.day, start.hour, start.minute);
+    final endDt = DateTime(now.year, now.month, now.day, end.hour, end.minute);
+    return Jiffy.parseFromDateTime(endDt).diff(Jiffy.parseFromDateTime(startDt), unit: Unit.minute) as int;
   }
 
   /// 将秒数转换为时分秒字符串

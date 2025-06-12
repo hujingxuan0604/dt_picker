@@ -59,10 +59,6 @@ class _DatePickerState extends State<DatePicker> {
       initialDate: widget.initialDate,
       displayMode: widget.displayMode,
     );
-
-    print(
-        'DatePicker初始化: displayMode=${widget.displayMode}, viewMode=${_controller.viewMode}');
-
     // 添加监听
     _controller.addListener(_onControllerChanged);
   }
